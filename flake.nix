@@ -13,7 +13,7 @@
 
         haskellPackages = pkgs.haskellPackages;
 
-        packageName = "Generic";
+        packageName = "LearnRhine";
 
         jailbreakUnbreak = pkg:
           pkgs.haskell.lib.doJailbreak (pkg.overrideAttrs (_: { meta = { }; }));
@@ -37,6 +37,8 @@
             cabal-install
             haskell-language-server
             haskellPackages.implicit-hie
+            # Rhine
+            haskellPackages.rhine
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };
