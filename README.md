@@ -4,7 +4,16 @@ This is my personal attempt at both learning and documents [rhine](https://githu
 
 ## Hello haskell with rhine
 
+Rather than use do notation and monad stacks with `IO` to do things, 
+we want to let rhine handle everything. 
+Rhine provides several key types that we will use to create programs.
+We will start with our goal type. Rhine provides the `Rhine` type, with accompanying
+`flow` function. `Rhine` is analagous to `StateT a IO ()` and `flow` to `evalState`, were
+we using `StateT` to manage our program.
+
 ```haskell
-main :: IO ()
-main = putStrLn "Hello world."
+flow :: (Monad m, Clock m cl, Time cl ~ Time (In cl), Time cl ~ Time (Out cl)) => Rhine m cl () () -> m ()
+```
+```haskell
+data Rhine m cl a b
 ```
