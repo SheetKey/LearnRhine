@@ -177,3 +177,14 @@ main = flow rhPrintMyLineRh
 ```
 
 that, upon getting user input, prints the user input, and waits for more user input.
+
+
+## Control flow
+
+In rhine, control flow is dealt with throw `ExceptT` and `ClSFExcept`. This section will
+be quite a bit more complcated than previous sections, but will allow us to write much more
+complicated programs. Lets set the goal of adding a quitting mechanism to our `rhPrintMyLineRh`
+program. When the user enters "q", we want to quit, rather than print the input string. We still
+want a to get the line the user types, so we won't change `rhGetLine`. Instead of composing
+this directly with printing, lets create a string validation `ClSF` to check if the string
+is "q".
