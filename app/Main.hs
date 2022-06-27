@@ -42,15 +42,15 @@ rhPrintMyLineRh = rhPrintMyLine @@ StdinClock
 --------------------------------------------------
 -- Quitting
 --------------------------------------------------
-rhValidate :: Monad m => ClSF (ExceptT () m) StdinClock String String
+rhValidate :: Monad m => ClSF (ExceptT () m) cl String String
 rhValidate = proc str -> do
-  _ <- throwOn' -< (str == "q", ())
+  throwOn' -< (str == "q", ())
   returnA -< str
 
 rhValidatePrint :: ClSF (ExceptT () IO) StdinClock () ()
 rhValidatePrint = rhGetLine >>> rhValidate >>> runClSFExcept (safe (arrMCl putStrLn))
 
-rhUseInput :: ClSFExcept IO StdinClock () () void
+rhUseInput :: ClSFExcept IO StdinClock () () Empty
 rhUseInput = do
   try rhValidatePrint
   once_ exitSuccess
