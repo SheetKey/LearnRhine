@@ -12,8 +12,70 @@ We will start with our goal type. Rhine provides the `Rhine` type, with accompan
 we using `StateT` to manage our program.
 
 ```haskell
-flow :: (Monad m, Clock m cl, Time cl ~ Time (In cl), Time cl ~ Time (Out cl)) => Rhine m cl () () -> m ()
+flow :: (Monad m, Clock m cl, Time cl ~ Time (In cl), Time cl ~ Time (Out cl)) 
+     => Rhine m cl () () -> m ()
 ```
 ```haskell
 data Rhine m cl a b
 ```
+
+The type constraints for `flow` is can largely be ignored at present. The constrains for `cl`
+help ensure clock safety, which will be explained shortly. In all type signature, `cl` refers
+to a clock.
+
+Then it can be seen that `Rhine` has some monad `m`, a clock `cl`, an input `a`, and and
+output `b`. While `Rhine` is useful, we won't be looking to carefully at its data constructors.
+We typically create a `Rhine` directly, but will use the `@@` combinator.
+
+```haskell
+(@@) :: (cl ~ In cl, cl ~ Out cl) => ClSF m cl a b -> cl -> Rhine m cl a b infix 5
+```
+
+This function takes a `ClSF` and a clock and gives us a `Rhine`. When we need a `Rhine`, this
+is what we will do (at least to start with).
+
+Lets dive into `ClSF` first. The name means clock signal function, and is a signal function 
+(just like in other FRP libraries I think) with a clock (you're not meant to know what a
+signal function is). So how do we make `ClSF`s?
+
+We have a few methods to create a `ClSF`:
+
+```haskell
+arr :: (a -> b) -> ClSF m cl a b
+```
+```haskell
+arrMCl :: (a -> m b) -> ClSF m cl a b
+```
+```haskell
+constMCl :: Monad m => m b -> ClSF m cl a b
+```
+
+`arr` turns a pure function into a `ClSF` that will be performed at every tick of the
+clock `cl`. `arrMCL` does the same but for unpure functions.
+`constMCl` produces a `ClSF` that ignores input.
+At this point the only mention
+of a clock has been in the type signature. It is when we turn a `ClSF` into a `Rhine` that
+an actual clock is provided.
+
+So how do we get user input with rhine?
+We need a clock! For our first program we'll use the `Millisecond` clock.
+The `Millisecond` clock is a type level signifier for clock type.
+It takes an argument `n :: Nat` and ticks every `n` milliseconds.
+(Make sure to have `{-# LANGUAGE DataKinds #-}` enabled.) 
+For more readable type signatures, we will create type synonyms for all the millisecond clocks
+we use.
+
+```haskell
+type Second = Millisecond 1000
+```
+
+`Second` is a clock type that will tick every second. 
+
+
+
+
+
+
+
+
+Well clocks in rhine have associated types of `Time` and `Tag`. 
