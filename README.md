@@ -369,3 +369,28 @@ rhUseInput = do
 That doesn't look so bad. We `try` `rhValidatePrint` over and over and over ... forever. Each time
 the user hits enter, the string is printed back. But when the user types "q", an exception is
 thrown. We move onto the next line, which exits the program. 
+
+Now, we need to turn this into a `Rhine`. As mentioned above, we use the `safely function
+now that we have handled all excpetions.
+
+```haskell
+rhUseInputSafe :: ClSF IO StdinClock () () 
+rhUseInputSafe = safely rhUseInput
+```
+
+(It seems like this is a naming convention: put `Safe` at the end of the name when
+calling `safely`.)
+And finally we get our `Rhine`:
+
+```haskell
+rhUseInputSafeRh :: Rhine IO StdinClock () ()
+rhUseInputSafeRh = rhUseInputSafe @@ StdinClock
+```
+
+We can put this in main:
+
+```haskell
+main :: IO ()
+main = flow rhUseInputSafeRh
+```
+

@@ -8,10 +8,11 @@ import FRP.Rhine.ClSF.Except
 
 
 import Control.Monad ( guard )
-import System.Exit (exitSuccess)
+import System.Exit (exitSuccess, exitFailure)
+import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhUseInputSafeRh
+main = flow checkUseInputSafeRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -60,3 +61,4 @@ rhUseInputSafe = safely rhUseInput
 
 rhUseInputSafeRh :: Rhine IO StdinClock () ()
 rhUseInputSafeRh = rhUseInputSafe @@ StdinClock
+
