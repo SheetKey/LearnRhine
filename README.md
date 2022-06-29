@@ -370,7 +370,7 @@ That doesn't look so bad. We `try` `rhValidatePrint` over and over and over ... 
 the user hits enter, the string is printed back. But when the user types "q", an exception is
 thrown. We move onto the next line, which exits the program. 
 
-Now, we need to turn this into a `Rhine`. As mentioned above, we use the `safely function
+Now, we need to turn this into a `Rhine`. As mentioned above, we use the `safely` function
 now that we have handled all excpetions.
 
 ```haskell
@@ -394,3 +394,112 @@ main :: IO ()
 main = flow rhUseInputSafeRh
 ```
 
+### Control flow warnings
+
+I ran into a few strange things trying to expand this example. I started by adding another
+exception
+
+```haskell
+rhCheckInput :: Monad m => ClSF (ExceptT String m) cl String String
+rhCheckInput = proc str -> do
+  throwOn' -< (str == "q" || str == "Hello", str)
+  returnA  -< str
+```
+
+This is the same as our previous `rhValidate` but now we throw an exception if the input is
+"Hello". Now we can change our exception handling function to provide a nice response
+when someone types "Hello". Attempt 1 (`rhCheckPrint` is the same as `rhValidatePrint`):
+
+```haskell
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput = do
+  str <- try rhCheckPrint
+  case str of
+    "q"     -> once_ exitSuccess
+    "Hello" -> do
+      once_ $ putStrLn "Hi!"
+      rhCheckUseInput
+    _       -> once_ exitFailure
+```
+
+This looks good, right? When this is run with `flow`,
+(after having used `safely` and turned it into a `Rhine`)
+when "Hello" is input, "Hi!" is printed repeatedly forever. This seemed very stange to
+me at first. What is happening is that the `flow` function ticks the `StdinClock`.
+Our `tagS` in `rhCheckPrint` gets the string and then `rhCheckPrint` does its thing. 
+When the string is "Hello", an exception is thrown and "Hi!" is printed.
+This all has happened on the same clock tick. The clock has not advanced, and still holds
+the same time value and tag value. So when `rhCheckUseInput` is called recursively, `tagS`
+gets the same tag, which is "Hello", so we find ourselves in an infinite loop. 
+(Note that in some cases we will be able to use recuresive `ClSFExcept`s very nicely,
+but we have to be careful.)
+
+Thats a problem but we can probably fix it. What if we don't make `rhCheckUseInput` 
+recursive, and let `flow` deal with the looping. Attempt 2:
+
+```haskell
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput = do
+  str <- try rhCheckPrint
+  case str of
+    "q"     -> once_ exitSuccess
+    "Hello" -> safe $ constMCl $ putStrLn "Hi!"
+    _       -> once_ exitFailure
+```
+
+The function is no longer recursive, but that means I can't use `once_` to print "Hi!", since
+once throws an exception (note that the reason `once_ exitSuccess` doesn't cause a type error
+is that `exitSuccess` has the type `IO Empty` in this case, so `once_` throws the
+`Empty` exception, which is nothing). 
+Instead I lift `putStrLn "Hi!"` into a `ClSF` and then use `safe`
+to turn the signal function in to a `ClSFExcept`. 
+
+When this is run with `flow`, it seems to work. Input of "Hello" prints "Hi!" only once, and
+then it waits for more input. But now anything I input just prints "Hi!". Other strings
+aren't printed back as expceted, and "q" doesn't quit the program. This is because once
+a switch has happened, its done. It won't switch back. We've matched to the "Hello" case,
+and we can never get out of the "Hello" case. 
+
+Finally a solution with help from the [internet](https://www.reddit.com/r/haskell/comments/vmvf7t/strange_behavior_with_rhine/).
+
+```haskell
+rhCheckUseInput :: ClSFExcept IO StdinClock () () ()
+rhCheckUseInput = do
+  str <- try rhCheckPrint
+  case str of
+    "q"     -> once_ exitSuccess
+    "Hello" -> once_ $ putStrLn "Hi!"
+    _       -> once_ exitFailure
+	
+main :: IO ()
+main = flow $ (fmap (const ()) . exceptS . runMSFExcept $ checkUseInput) @@ StdinClock
+```
+
+We've changed our exception type from `Empty` to `()`, as well as our main. We no longe have
+an all exceptions handled `ClSFExcept` function so we can't use `safely`. Instead we 
+use `runMSFExcept` to get a type `ClSF (ExceptT () IO) StdinClock () ()`. 
+Then `exceptS` to get a type `ClSF IO StdinClock () (Either () ())`. (We haven't talked
+about `exceptS` but all it does is turn the result type into `Either error result`.) 
+Then our we really have a result of `IO (Either () ())` so we `fmap` to get `IO ()` no matter
+what. This works but is not satisfying. 
+
+In the end the best approach would be to not throw an exception for "Hello", and instead
+write a pure function used by `rhValidatePrint` that handles that case.
+
+```haskell
+rhValidatePrint :: ClSF (ExceptT () IO) StdinClock () ()
+rhValidatePrint = rhGetLine >>> rhValidate 
+                  >>> runClSFExcept (safe (arrMCl (\str -> if str == "Hello"
+	                                                         then putStrLn "Hi!"
+															 else putStrLn str)))
+```
+	
+## More clocks
+
+While what we did works just fine to demonstrate control flow in rhine, its not really the best 
+way to do things. It doesn't make sense to have a single clock, the point of rhine is to have
+many, and using a single `StdinClock` throughout the program can create some strange behavior.
+
+Our `rhValidate` signal function doesn't use a specific clock. But since `rhGetLine` has
+an `StdinClock`, when we compose `rhGetLine`, we end up with a new signal function that
+also has a `StdinClock`. 

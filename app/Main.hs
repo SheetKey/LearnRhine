@@ -12,7 +12,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow checkUseInputSafeRh
+main = flow rhPrintMyLineRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -61,4 +61,34 @@ rhUseInputSafe = safely rhUseInput
 
 rhUseInputSafeRh :: Rhine IO StdinClock () ()
 rhUseInputSafeRh = rhUseInputSafe @@ StdinClock
+
+--------------------------------------------------
+-- Using exceptions (This section doesn't work
+-- but is left here as an example)
+--------------------------------------------------
+rhCheckInput :: Monad m => ClSF (ExceptT String m) cl String String
+rhCheckInput = proc str -> do
+  throwOn' -< (str == "q" || str == "Hello", str)
+  returnA  -< str
+
+rhCheckPrint :: ClSF (ExceptT String IO) StdinClock () ()
+rhCheckPrint = rhGetLine >>> rhCheckInput >>> runClSFExcept (safe (arrMCl putStrLn))
+
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput = do
+  str <- try rhCheckPrint
+  case str of
+    "q"     -> once_ exitSuccess
+    "Hello" -> do
+      once_ $ putStrLn "Hi!"
+      rhCheckUseInput
+    _       -> once_ exitFailure
+
+rhCheckUseInputSafe :: ClSF IO StdinClock () ()
+rhCheckUseInputSafe = safely rhCheckUseInput 
+
+rhCheckUseInputSafeRh :: Rhine IO StdinClock () ()
+rhCheckUseInputSafeRh = rhCheckUseInputSafe @@ StdinClock
+
+
 
