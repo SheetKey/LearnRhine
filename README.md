@@ -490,8 +490,8 @@ write a pure function used by `rhValidatePrint` that handles that case.
 rhValidatePrint :: ClSF (ExceptT () IO) StdinClock () ()
 rhValidatePrint = rhGetLine >>> rhValidate 
                   >>> runClSFExcept (safe (arrMCl (\str -> if str == "Hello"
-	                                                         then putStrLn "Hi!"
-															 else putStrLn str)))
+                                                             then putStrLn "Hi!"
+                                                             else putStrLn str)))
 ```
 	
 ## More clocks
