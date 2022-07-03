@@ -12,7 +12,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhPrintMyLineRh
+main = flow rhPrintComboRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -90,5 +90,28 @@ rhCheckUseInputSafe = safely rhCheckUseInput
 rhCheckUseInputSafeRh :: Rhine IO StdinClock () ()
 rhCheckUseInputSafeRh = rhCheckUseInputSafe @@ StdinClock
 
+--------------------------------------------------
+-- Combining clocks
+--------------------------------------------------
+type Second5 = Millisecond 5000
 
+rhPrint1S :: ClSF IO Second () ()
+rhPrint1S = constMCl $ print "Every 1s."
 
+rhPrint5S :: ClSF IO Second5 () ()
+rhPrint5S = constMCl $ print "Every 5s."
+
+rhPrint1SSN :: SN IO Second () ()
+rhPrint1SSN = Synchronous rhPrint1S
+
+rhPrint5SSN :: SN IO Second5 () ()
+rhPrint5SSN = Synchronous rhPrint5S
+  
+rhPrintComboSN :: SN IO (ParClock IO Second Second5) () ()
+rhPrintComboSN = rhPrint1SSN |||| rhPrint5SSN
+
+rhPrintComboClock :: ParClock IO Second Second5
+rhPrintComboClock = ParallelClock waitClock waitClock scheduleMillisecond
+
+rhPrintComboRh :: Rhine IO (ParClock IO Second Second5) () ()
+rhPrintComboRh = Rhine rhPrintComboSN rhPrintComboClock

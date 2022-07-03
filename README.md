@@ -494,12 +494,151 @@ rhValidatePrint = rhGetLine >>> rhValidate
                                                              else putStrLn str)))
 ```
 	
-## More clocks
+## Combining Clocks
 
 While what we did works just fine to demonstrate control flow in rhine, its not really the best 
 way to do things. It doesn't make sense to have a single clock, the point of rhine is to have
 many, and using a single `StdinClock` throughout the program can create some strange behavior.
 
-Our `rhValidate` signal function doesn't use a specific clock. But since `rhGetLine` has
-an `StdinClock`, when we compose `rhGetLine`, we end up with a new signal function that
-also has a `StdinClock`. 
+Lets start with the basics of combining things. We have already done a little sequential
+combination using `(>>>)`. This allowed us to sequence two `ClSF`s with the same clock type,
+so that the output of the first is the input of the second, and all this happens within one tick
+of the same clock. 
+
+Now suppose we have two signal functions that each take no input and produce no output. 
+
+```haskell
+type Second  = Millisecond 1000
+type Second5 = Millisecond 5000
+
+rhPrint1S :: ClSF IO Second () ()
+rhPrint1S = constMCl $ print "Every 1s."
+
+rhPrint5S :: ClSF IO Second5 () ()
+rhPrint5S = constMCl $ print "Every 5s."
+```
+
+(We've seen this before.) 
+We want to combine these `ClSF`s, but if we try to use `(>>>)` we get a type error. 
+So what can we do?
+
+### Signal Networks
+
+First we need to make a short segue to introduce signal networks.
+In rhine `SN`s are defined
+
+```haskell
+data SN m cl a b where
+  Synchronous 
+    :: (cl ~ In cl, cl ~ Out cl) 
+    => ClSF m cl a b -> SN m cl a b
+  Sequential 
+    :: (Clock m clab, Clock m clcd, Time clab ~ Time clcd, Time clab ~ Time (Out clab), Time clcd ~ Time (In clcd)) 
+    => SN m clab a b 
+    -> ResamplingBuffer m (Out clab) (In clcd) b c 
+    -> SN m clcd c d -> SN m (SequentialClock m clab clcd) a d
+  Parallel 
+    :: (Clock m cl1, Clock m cl2, Time cl1 ~ Time (Out cl1), Time cl2 ~ Time (Out cl2), Time cl1 ~ Time cl2, Time cl1 ~ Time (In cl1), Time cl2 ~ Time (In cl2)) 
+    => SN m cl1 a b 
+    -> SN m cl2 a b 
+    -> SN m (ParallelClock m cl1 cl2) a b
+```
+
+Its best to ingnore the type constraints, they just ensure clock safety.
+(Also if you're unfamiliar with the `data ... where` syntax its called GATDs, you can look it
+up. Its really just alternate syntax to define a product type in this case.)
+
+So a signal network can be synchronous, in which case its just a single `ClSF` which is also
+synchronous, it can be squential which we won't worry about for now, or it can be parallel.
+
+Additionally, we have already used `Rhine`s, but heres the data type:
+
+```haskell
+data Rhine m cl a b = 
+  Rhine { sn :: SN m cl a b
+        , clock :: cl }
+```
+
+The `@@` operator we used to make a `ClSF` into a `Rhine` is just for convience.
+
+```haskell
+@@ = Rhine . Synchronous
+```
+
+We've already been using `SN`s!
+
+### Parallel Signal Networks
+
+Lets return to our example and figure out how to combine our two `ClSF`s.
+First we need to make them into `SN`s.
+
+```haskell
+rhPrint1SSN :: SN IO Second () ()
+rhPrint1SSN = Synchronous rhPrint1S
+
+rhPrint5SSN :: SN IO Second5 () ()
+rhPrint5SSN = Synchronous rhPrint5S
+```
+
+(Here I've added "SN" to the ends of the names. This can be done much more concisely
+but I've opted to be verbose for clarity.)
+Now that we have two `SN`s, we can use the `Parallel` data constructor to create a new
+`SN`. We will instead use the combinator `||||` which is defined simply: `|||| = Parallel`.
+
+```haskell
+rhPrintComboSN :: SN IO (ParClock IO Second Second5) () ()
+rhPrintComboSN = rhPrint1SSN |||| rhPrint5SSN
+```
+
+Our type signature has a new clock type, a `ParClock`. Interestingly, it has an associated 
+monad, in this case `IO`. This is because the `Millisecond` clock type uses the system clock,
+and thus has side effects in `IO`. When we combine `Millisecond` clocks, the combo also
+has side effects in `IO`. We won't worry about clocks to much, and will just let the 
+combinators take care of the clock type. 
+
+Now that we have our `SN`, we want to make it a `Rhine`. But the `Rhine` data constructor
+requires us to provide a clock. Previously we only had to provide an "atomic" clock, meaning
+a singular clock, such as with `waitClock` for `Millisecond n` or `StdinClock` for `StdinClock`.
+Now we have to create a clock with type `ParClock IO Second Second5`. 
+
+### ParClock and Schedules
+
+If we look at the definition of `ParClock` (Which is a type synonym for `ParallelClock`):
+
+```haskell
+data ParallelClock m cl1 cl2
+  = Time cl1 ~ Time cl2
+  => ParallelClock
+    { parallelCl1      :: cl1
+    , parallelCl2      :: cl2
+    , parallelSchedule :: Schedule m cl1 cl2
+    }
+```
+
+we see that we need to provide two clocks, which we know about (`Second` and `Second5`),
+but we also have to provide a `Schedule`. A schedule determines when clocks will tick.
+Rhine provides lots of different and useful schedules, so we don't need to look into the
+type. Clocks can be scheduled deterministically or not. Non-determinist clocks can
+be squeduled concurrently. Since we have two `Millisecond n` clocks, they can be 
+squeduled deterministically, and rhine provides `scheduleMillisecond :: Schedule () (Millisecond n1) (Millisecond n2)` to help us do so. When creating a `Schedule`, no arguments are given.
+This seems strange but it is because what would be arguments are just handled at the
+type level. So lets see if we can create our clock.
+
+```haskell
+rhPrintComboClock :: ParClock IO Second Second5
+rhPrintComboClock = ParallelClock waitClock waitClock scheduleMillisecond
+```
+
+And now we have our clock! (Theres no `ParClock` data constructor so we must use
+the `ParallelClock` data constructor.) Now we can turn our `SN` into a `Rhine`.
+
+```haskell
+rhPrintComboRh :: Rhine IO (ParClock IO Second Second5) () ()
+rhPrintComboRh = Rhine rhPrintComboSN rhPrintComboClock
+```
+
+And it works! You may notice that on the fifth tick, "Every 1s." prints immidiately before
+"Every 5s." This is because the schedule evaluates the first `SN` before the second if they
+happen at the same time. There are other schedules and ways to create schedules from schediles 
+that can allow the user to pick the order. In this case, simply changing the order would
+make "Every 5s." print before "Every 1s." on the fifth tick.
