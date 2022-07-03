@@ -642,3 +642,45 @@ And it works! You may notice that on the fifth tick, "Every 1s." prints immidiat
 happen at the same time. There are other schedules and ways to create schedules from schediles 
 that can allow the user to pick the order. In this case, simply changing the order would
 make "Every 5s." print before "Every 1s." on the fifth tick.
+
+### Skipping signal networks
+
+While there may be times when we would like to work with signal networks, we can often go straight
+from `ClSF`s to `Rhine`s. I think it is useful to know whats going on so we can be more
+confident when skipping steps. Just as we used `@@` to skip the `SN` step before,
+we have some convient operators for time parallel composition.
+
+Lets make our first `Rhine`s using the same functions as before
+
+```haskell
+rhPrint1SRh :: Rhine IO Second () ()
+rhPrint1SRh = rhPrint1S @@ waitClock
+
+rhPrint5SRh :: Rhine IO Second5 () ()
+rhPrint5SRh = rhPrint5S @@ waitClock
+```
+
+Remembering that `Rhine`s have clocks, all we need to combine these `Rhine`s in time parallel is
+a schedule. We will use the same `scheduleMilliseond` schedule as before. Rhine
+gives us to operators, `||@` and `@||`. Often when combining things with different clocks, 
+we will have two operators like these, folling the pattern
+
+```haskell
+thing1 op1 stuff op2 thing2
+```
+
+For now `thing1` and `thing2` are our `Rhine`s, but they could also be `SN`s. The `stuff` is
+will be a schedule, but we will need additional components when we want to sequence data.
+
+So now we can write
+
+```haskell
+rhPrintComboRhV2 :: Rhine IO (ParClock IO Second Second5) () ()
+rhPrintComboRhV2 = rhPrint1SRh ||@ scheduleMillisecond @|| rhPrint5SRh
+```
+
+We can read this as "We combing `rhPrint1SRh` in parallel at the `scheduleMillisecond` rate,
+then at this rate combine in parallel with `rhPrint5SRh`." This is a bit wordy, but in rhine
+one or more `|` generally translates to "in parallel", and `@` to "at this rate."
+We now have an equivalent program to `rhPrintComboRh`, but we haven't used any `SN`s 
+directly.

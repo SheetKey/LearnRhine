@@ -4,7 +4,35 @@
 module Main where
 
 import FRP.Rhine
-import FRP.Rhine.ClSF.Except
+    ( returnA,
+      (>>>),
+      safe,
+      safely,
+      arrMCl,
+      constMCl,
+      once_,
+      runClSFExcept,
+      throwOn',
+      try,
+      tagS,
+      scheduleMillisecond,
+      waitClock,
+      flow,
+      (@@),
+      (@||),
+      (||@),
+      (||||),
+      Empty,
+      ClSF,
+      ClSFExcept,
+      Millisecond,
+      StdinClock(..),
+      SN(Synchronous),
+      ParClock,
+      ParallelClock(ParallelClock),
+      Rhine(Rhine),
+      ExceptT )
+import FRP.Rhine.ClSF.Except ()
 
 
 import Control.Monad ( guard )
@@ -12,7 +40,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhPrintComboRh
+main = flow rhPrintComboRhV2
 
 --------------------------------------------------
 -- 1 second clock
@@ -115,3 +143,15 @@ rhPrintComboClock = ParallelClock waitClock waitClock scheduleMillisecond
 
 rhPrintComboRh :: Rhine IO (ParClock IO Second Second5) () ()
 rhPrintComboRh = Rhine rhPrintComboSN rhPrintComboClock
+
+--------------------------------------------------
+-- Time parallel Rhine composition
+--------------------------------------------------
+rhPrint1SRh :: Rhine IO Second () ()
+rhPrint1SRh = rhPrint1S @@ waitClock
+
+rhPrint5SRh :: Rhine IO Second5 () ()
+rhPrint5SRh = rhPrint5S @@ waitClock
+
+rhPrintComboRhV2 :: Rhine IO (ParClock IO Second Second5) () ()
+rhPrintComboRhV2 = rhPrint1SRh ||@ scheduleMillisecond @|| rhPrint5SRh
