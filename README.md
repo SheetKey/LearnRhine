@@ -684,3 +684,22 @@ then at this rate combine in parallel with `rhPrint5SRh`." This is a bit wordy, 
 one or more `|` generally translates to "in parallel", and `@` to "at this rate."
 We now have an equivalent program to `rhPrintComboRh`, but we haven't used any `SN`s 
 directly.
+
+### More time parallel composition
+
+In the previous sections we say to to compose things with parallel time, such that
+they have the same input and output types. We can also compose `SN`s or `Rhine`s that have 
+different clocks, the same input type, but different output types. Replacing `||||` we have
+
+```haskell
+(++++) :: (Monad m, Clock m clL, Clock m clR, Time clL ~ Time clR, Time clL ~ Time (Out clL), Time clL ~ Time (In clL), Time clR ~ Time (Out clR), Time clR ~ Time (In clR)) 
+       => SN m clL a b 
+	   -> SN m clR a c 
+	   -> SN m (ParClock m clL clR) a (Either b c)
+```
+
+Again its best to ingore the type constraints for now. We can see that the only thing thats
+changed is we now return an `Either`. 
+
+Additionally, replacing `||@` and `@||` we have `++@` and `@++` which again allow us to skip
+explicitly defining `SN`s.
