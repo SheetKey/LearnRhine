@@ -776,4 +776,43 @@ rhine1 >-- resBuf -@- schedule --> rhine2
 `-->` creates a new `Rhine`. We don't need to worry about the intermediate types. We have 
 enough power working soley with `Rhine`s, `ResBuf`s, and `Schedule`s.
 
+So far all of our signal function took no input or output, so lets write some new ones.
+To keep things simple to start with, lets just use `Millisecond n` clocks. 
+Just as before,
 
+```haskell
+type Second1 = Millisecond 1000
+type Second2 = Millisecond 2000
+type Second3 = Millisecond 3000
+
+rhGiveEvery1Rh :: Monad m => Rhine m Second () Int
+rhGiveEvery1Rh = arr (const 5) @@ waitClock
+
+rhGiveEvery3Rh :: Monad m => Rhine m Second3 () Int
+rhGiveEvery3Rh = arr (const 5) @@ waitClock
+
+rhTakeEvery2Rh :: Rhine IO Second2 Int ()
+rhTakeEvery2Rh = arrMCl print @@ waitClock
+
+rhGiveAndTake1 :: Rhine
+  IO
+  (SequentialClock IO Second Second2)
+  ()
+  ()
+rhGiveAndTake1 = rhGiveEvery1Rh >-- keepLast 1 -@- scheduleMillisecond --> rhTakeEvery2Rh
+
+rhGiveAndTake2 :: Rhine
+  IO
+  (SequentialClock IO Second3 Second2)
+  ()
+  ()
+rhGiveAndTake2 = rhGiveEvery3Rh >-- keepLast 1 -@- scheduleMillisecond --> rhTakeEvery2Rh
+```
+
+`rhGiveEvery1Rh` and `3Rh` output `5 :: Int` every 1 and 3 seconds.
+`rhTakeEvery2Rh` takes and `Int` and prints it every 2 seconds. 
+I use the `keepLast` function to create a `ResBuf`. `keepLast` takes an
+initial value to use in the case that it has not yet recieved any input, then it keeps the most
+recent input value. `rhGiveAndTake1` always print "5" every 2 seconds. `rhGiveAndTake2` prints
+"1" once and then prints "5" forever. I used the `scheduleMillisecond` schedule again because
+we have `Millisecond n` clocks.

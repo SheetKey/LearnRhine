@@ -27,6 +27,9 @@ import FRP.Rhine
       (@||),
       (||@),
       (||||),
+      (>--),
+      (-@-),
+      (-->),
       Empty,
       ClSF,
       ClSFExcept,
@@ -36,7 +39,8 @@ import FRP.Rhine
       ParClock,
       ParallelClock(ParallelClock),
       Rhine(Rhine),
-      ExceptT, schedPar1 )
+      ExceptT,
+      Arrow (arr), keepLast, SequentialClock)
 import FRP.Rhine.ClSF.Except ()
 
 
@@ -45,7 +49,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhPrintComboAndInputRh
+main = flow rhGiveAndTake2
 
 --------------------------------------------------
 -- 1 second clock
@@ -167,3 +171,31 @@ rhPrintComboRhV2 = rhPrint1SRh ||@ scheduleMillisecond @|| rhPrint5SRh
 rhPrintComboAndInputRh :: Rhine IO (ParallelClock IO (ParClock IO Second Second5) StdinClock) () ()
 rhPrintComboAndInputRh = rhPrintComboRhV2 ||@ concurrently @|| rhUseInputSafeRh
 
+--------------------------------------------------
+-- Sequential Millisecond
+--------------------------------------------------
+type Second2 = Millisecond 2000
+type Second3 = Millisecond 3000
+
+rhGiveEvery1Rh :: Monad m => Rhine m Second () Int
+rhGiveEvery1Rh = arr (const 5) @@ waitClock
+
+rhGiveEvery3Rh :: Monad m => Rhine m Second3 () Int
+rhGiveEvery3Rh = arr (const 5) @@ waitClock
+
+rhTakeEvery2Rh :: Rhine IO Second2 Int ()
+rhTakeEvery2Rh = arrMCl print @@ waitClock
+
+rhGiveAndTake1 :: Rhine
+  IO
+  (SequentialClock IO Second Second2)
+  ()
+  ()
+rhGiveAndTake1 = rhGiveEvery1Rh >-- keepLast 1 -@- scheduleMillisecond --> rhTakeEvery2Rh
+
+rhGiveAndTake2 :: Rhine
+  IO
+  (SequentialClock IO Second3 Second2)
+  ()
+  ()
+rhGiveAndTake2 = rhGiveEvery3Rh >-- keepLast 1 -@- scheduleMillisecond --> rhTakeEvery2Rh
