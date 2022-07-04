@@ -723,3 +723,57 @@ rhPrintComboAndInputRh :: Rhine IO (ParallelClock IO
                                    (ParClock IO Second Second5) StdinClock) () ()
 rhPrintComboAndInputRh = rhPrintComboRhV2 ||@ concurrently @|| rhUseInputSafeRh
 ```
+
+### Sequential composition
+
+Now that we thoroughly understand clock parallel composition, we return to the more challenging
+topic of sequential composition. We have seen sequential composition for `ClSF`s
+with `(>>>)`, but this requires the same clock type. Now we want to have sequential composition
+with different clock types. Recall that when we first looked at `SN`s, we ignored the 
+`Sequential` `SN` data constructor.
+
+```haskell
+Sequential 
+  :: (Clock m clab, Clock m clcd, Time clab ~ Time clcd, Time clab ~ Time (Out clab), Time clcd ~ Time (In clcd)) 
+  => SN m clab a b 
+  -> ResamplingBuffer m (Out clab) (In clcd) b c 
+  -> SN m clcd c d 
+  -> SN m (SequentialClock m clab clcd) a d
+```
+
+We can see that our final `SN` will have a `SequentialClock` clocktype. Additionally,
+the data constructor takes a `ResamplingBuffer` (`ResBuf` is a type synonym) which we haven't
+seen before. You may know what a `ResBuf` is, but when I began with rhine I did not, so
+I'll try to explain.
+
+When we want to sequentially combine signal functions with different clocks, there are two
+scenarios: either the first clock is faster or the second clock is faster (this isn't quite 
+true because one of the clocks could be `StdinClock` which we know nothing about the speed,
+but that isn't an issue). If the first clock is faster, then it will produce too much output 
+for the second signal function to handle. In this case we need to decide what to do with all
+that output. We use a `ResBuf` to store the output, and then when the second clock finally ticks,
+the type of `ResBuf` decides what value to give it. `ResBuf`s include things like 
+FIFO (first in first out) and LIFO (last in first out). There are both bounded and unbounded
+versions which will delete values to prevent running out of memory. If the second clock is faster,
+then we can still use FIFO or LIFO buffers, which actually pass a `Maybe` value. If the buffer
+is empty it passes `Nothing`. We also have other buffers that we can give a default value to.
+There are interpolation buffers which interpolate the input to always be able to provide a value.
+This should become clearer if its not already.
+
+Rhine gives us the ability to extend `ResBuf`s, by pre or post composing them with functions.
+We can also compose `ResBuf`s in data parallel for when we have signal functions
+that have been composed in data parallel. 
+
+While we could use the `SN`s `Sequential` data constructor, we're better off just working with
+`Rhine`s. Rhine gives us some nice sugar that makes thigs very easy. It resemples the pattern
+we used for composing `Rhine`s in parallel, but now we have a `ResBuff`.
+
+```haskell
+rhine1 >-- resBuf -@- schedule --> rhine2
+```
+
+`-@-` creates a `ResamplingPoint`, `>--` creates a `RhineAndResamplingPoint`, and finally
+`-->` creates a new `Rhine`. We don't need to worry about the intermediate types. We have 
+enough power working soley with `Rhine`s, `ResBuf`s, and `Schedule`s.
+
+

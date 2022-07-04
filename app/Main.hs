@@ -19,6 +19,10 @@ import FRP.Rhine
       waitClock,
       flow,
       concurrently,
+      schedPar1,
+      schedPar1',
+      schedPar2,
+      schedPar2',
       (@@),
       (@||),
       (||@),
@@ -32,7 +36,7 @@ import FRP.Rhine
       ParClock,
       ParallelClock(ParallelClock),
       Rhine(Rhine),
-      ExceptT )
+      ExceptT, schedPar1 )
 import FRP.Rhine.ClSF.Except ()
 
 
@@ -162,3 +166,4 @@ rhPrintComboRhV2 = rhPrint1SRh ||@ scheduleMillisecond @|| rhPrint5SRh
 --------------------------------------------------
 rhPrintComboAndInputRh :: Rhine IO (ParallelClock IO (ParClock IO Second Second5) StdinClock) () ()
 rhPrintComboAndInputRh = rhPrintComboRhV2 ||@ concurrently @|| rhUseInputSafeRh
+
