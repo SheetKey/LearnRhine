@@ -18,6 +18,7 @@ import FRP.Rhine
       scheduleMillisecond,
       waitClock,
       flow,
+      concurrently,
       (@@),
       (@||),
       (||@),
@@ -40,7 +41,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhPrintComboRhV2
+main = flow rhPrintComboAndInputRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -155,3 +156,9 @@ rhPrint5SRh = rhPrint5S @@ waitClock
 
 rhPrintComboRhV2 :: Rhine IO (ParClock IO Second Second5) () ()
 rhPrintComboRhV2 = rhPrint1SRh ||@ scheduleMillisecond @|| rhPrint5SRh
+
+--------------------------------------------------
+-- Scheduling non-deterministic clocks
+--------------------------------------------------
+rhPrintComboAndInputRh :: Rhine IO (ParallelClock IO (ParClock IO Second Second5) StdinClock) () ()
+rhPrintComboAndInputRh = rhPrintComboRhV2 ||@ concurrently @|| rhUseInputSafeRh

@@ -703,3 +703,23 @@ changed is we now return an `Either`.
 
 Additionally, replacing `||@` and `@||` we have `++@` and `@++` which again allow us to skip
 explicitly defining `SN`s.
+
+### Composition with non-deterministic locks
+
+We previously looked at scheduling two different `Millisecond n` clocks, which can always be
+scheduled deterministically. Suppose we want to create a singal program out of 
+`rhPrintComboRhV2` and `rhUseInputSafeRh`. The clocks of each of these `Rhine`s cannot be
+scheduled deterministically because of `StdinClock`. We never know when `StdinClock` will tick,
+so it can't be scheduled deterministically with any clock. 
+
+We're dealing with two `Rhine`s that each have the same input and output type, `()`. This is a
+sign that we want to combine them clock parallel, which we know how to do using `||@` and `@||`.
+All we need is a schedule. Since we can't use a deterministic schedule, we're left with
+`concurrently`. (I first wrote the function and let HLS give me the type signature. This is 
+useful because in more complicated situations we can have quite complex clock trees.)
+
+```haskell
+rhPrintComboAndInputRh :: Rhine IO (ParallelClock IO 
+                                   (ParClock IO Second Second5) StdinClock) () ()
+rhPrintComboAndInputRh = rhPrintComboRhV2 ||@ concurrently @|| rhUseInputSafeRh
+```
