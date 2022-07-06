@@ -864,3 +864,71 @@ rhGiveAndTake3 =
   -@- scheduleMillisecond
   --> rhTakeEvery2Rh
 ```
+
+#### Different clocks
+
+Now that we know a little bit about `ResBuf`s, lets change up the clocks. 
+I've rewritten some got from before that gets user input and quits the program if the
+input is "q". Its nothing new, but instead of just printing the string as before, I now 
+return the string.
+
+```haskell
+rhValidateString :: ClSF (ExceptT () IO) StdinClock () String
+rhValidateString = rhGetLine >>> rhValidate
+
+rhGetInput :: ClSFExcept IO StdinClock () String Empty
+rhGetInput = do
+  try rhValidateString
+  once_ exitSuccess
+
+rhGetInputSafeRh :: Rhine IO StdinClock () String
+rhGetInputSafeRh = safely rhGetInput @@ StdinClock
+```
+
+We don't know when we'll get a string, so we need to handle the case where the second `Rhine`s
+clock ticks, but there is no input string from `rhGetInputSafeRh`. Lets start with `keepLast`.
+This always will give a string, so we need a `Rhine` that will accept a string.
+
+```haskell
+rhPrintStringLnRh :: Rhine IO Second2 String ()
+rhPrintStringLnRh = arrMCl putStrLn @@ waitClock
+```
+
+And then we can combine them with `keepLast` as the `ResBuf` and `concurrently` as the 
+schedule.
+
+```haskell
+rhThing1Rh :: Rhine IO (SequentialClock IO StdinClock Second2) () ()
+rhThing1Rh =
+  rhGetInputSafeRh
+  >-- keepLast "Nothing yes."
+  -@- concurrently
+  --> rhPutStringLnRh
+```
+
+This works, but what if we only want to print something if we recieve input? Lets use a bounded
+FIFO `ResBuf`. `fifoBounded` outputs a `Maybe` value, so we need a printing function that takes
+a `Maybe String`.
+
+```haskell
+rhPutStringLnMaybe :: ClSF IO Second2 (Maybe String) ()
+rhPutStringLnMaybe = proc mStr ->
+  case mStr of
+    Just str -> (arrMCl putStrLn) -< str
+    Nothing -> (arrMCl putStrLn) -< "Waiting..."
+
+rhPutStringLnMaybeRh :: Rhine IO Second2 (Maybe String) ()
+rhPutStringLnMaybeRh = rhPutStringLnMaybe @@ waitClock
+
+rhThing2Rh :: Rhine IO (SequentialClock IO StdinClock Second2) () ()
+rhThing2Rh =
+  rhGetInputSafeRh
+  >-- fifoBounded 5
+  -@- concurrently
+  --> rhPutStringLnMaybeRh
+```
+
+I used arrow notation to handle the case that `rhPutStringLnMaybe` gets `Nothing`. It is more
+readable this way. The sequential composition is the same as before except that we now
+have `fifoBounded`. `fifoBounded` takes an argument of the maximum number of 
+values that should be saved.

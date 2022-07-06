@@ -40,7 +40,7 @@ import FRP.Rhine
       ParallelClock(ParallelClock),
       Rhine(Rhine),
       ExceptT,
-      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^))
+      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded)
 import FRP.Rhine.ClSF.Except ()
 
 import qualified Data.Vector.Sized as V
@@ -50,7 +50,7 @@ import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhGiveAndTake3
+main = flow rhThing2Rh
 
 --------------------------------------------------
 -- 1 second clock
@@ -210,3 +210,43 @@ rhGiveAndTake3 =
   >-- (downsampleMillisecond >>-^ arr V.head)
   -@- scheduleMillisecond
   --> rhTakeEvery2Rh
+
+--------------------------------------------------
+-- Different clocks
+--------------------------------------------------
+rhValidateString :: ClSF (ExceptT () IO) StdinClock () String
+rhValidateString = rhGetLine >>> rhValidate
+
+rhGetInput :: ClSFExcept IO StdinClock () String Empty
+rhGetInput = do
+  try rhValidateString
+  once_ exitSuccess
+
+rhGetInputSafeRh :: Rhine IO StdinClock () String
+rhGetInputSafeRh = safely rhGetInput @@ StdinClock
+
+rhPutStringLnRh :: Rhine IO Second2 String ()
+rhPutStringLnRh = arrMCl putStrLn @@ waitClock
+
+rhThing1Rh :: Rhine IO (SequentialClock IO StdinClock Second2) () ()
+rhThing1Rh =
+  rhGetInputSafeRh
+  >-- keepLast "Nothing yes."
+  -@- concurrently
+  --> rhPutStringLnRh
+
+rhPutStringLnMaybe :: ClSF IO Second2 (Maybe String) ()
+rhPutStringLnMaybe = proc mStr ->
+  case mStr of
+    Just str -> (arrMCl putStrLn) -< str
+    Nothing -> (arrMCl putStrLn) -< "Waiting..."
+
+rhPutStringLnMaybeRh :: Rhine IO Second2 (Maybe String) ()
+rhPutStringLnMaybeRh = rhPutStringLnMaybe @@ waitClock
+
+rhThing2Rh :: Rhine IO (SequentialClock IO StdinClock Second2) () ()
+rhThing2Rh =
+  rhGetInputSafeRh
+  >-- fifoBounded 5
+  -@- concurrently
+  --> rhPutStringLnMaybeRh
