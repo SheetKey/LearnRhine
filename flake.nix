@@ -39,6 +39,7 @@
             haskellPackages.implicit-hie
             # Rhine
             haskellPackages.rhine
+            haskellPackages.vector-sized
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };
