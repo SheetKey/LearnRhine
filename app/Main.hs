@@ -40,16 +40,17 @@ import FRP.Rhine
       ParallelClock(ParallelClock),
       Rhine(Rhine),
       ExceptT,
-      Arrow (arr), keepLast, SequentialClock)
+      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^))
 import FRP.Rhine.ClSF.Except ()
 
+import qualified Data.Vector.Sized as V
 
 import Control.Monad ( guard )
 import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
 
 main :: IO ()
-main = flow rhGiveAndTake2
+main = flow rhGiveAndTake3
 
 --------------------------------------------------
 -- 1 second clock
@@ -93,7 +94,7 @@ rhUseInput = do
   try rhValidatePrint
   once_ exitSuccess
 
-rhUseInputSafe :: ClSF IO StdinClock () () 
+rhUseInputSafe :: ClSF IO StdinClock () ()
 rhUseInputSafe = safely rhUseInput
 
 rhUseInputSafeRh :: Rhine IO StdinClock () ()
@@ -122,7 +123,7 @@ rhCheckUseInput = do
     _       -> once_ exitFailure
 
 rhCheckUseInputSafe :: ClSF IO StdinClock () ()
-rhCheckUseInputSafe = safely rhCheckUseInput 
+rhCheckUseInputSafe = safely rhCheckUseInput
 
 rhCheckUseInputSafeRh :: Rhine IO StdinClock () ()
 rhCheckUseInputSafeRh = rhCheckUseInputSafe @@ StdinClock
@@ -143,7 +144,7 @@ rhPrint1SSN = Synchronous rhPrint1S
 
 rhPrint5SSN :: SN IO Second5 () ()
 rhPrint5SSN = Synchronous rhPrint5S
-  
+
 rhPrintComboSN :: SN IO (ParClock IO Second Second5) () ()
 rhPrintComboSN = rhPrint1SSN |||| rhPrint5SSN
 
@@ -199,3 +200,13 @@ rhGiveAndTake2 :: Rhine
   ()
   ()
 rhGiveAndTake2 = rhGiveEvery3Rh >-- keepLast 1 -@- scheduleMillisecond --> rhTakeEvery2Rh
+
+--------------------------------------------------
+-- downsampleMillisecond
+--------------------------------------------------
+rhGiveAndTake3 :: Rhine IO (SequentialClock IO Second Second2) () ()
+rhGiveAndTake3 =
+  rhGiveEvery1Rh
+  >-- (downsampleMillisecond >>-^ arr V.head)
+  -@- scheduleMillisecond
+  --> rhTakeEvery2Rh

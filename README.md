@@ -816,3 +816,51 @@ initial value to use in the case that it has not yet recieved any input, then it
 recent input value. `rhGiveAndTake1` always print "5" every 2 seconds. `rhGiveAndTake2` prints
 "1" once and then prints "5" forever. I used the `scheduleMillisecond` schedule again because
 we have `Millisecond n` clocks.
+
+#### `downSampleMillisecond`
+
+There is a specific `ResBuf` just for dealing with multiple `Millisecond n` clocks. 
+
+```haskell
+downsampleMillisecond :: (KnownNat n, Monad m) 
+  => ResamplingBuffer m (Millisecond k) (Millisecond (n * k)) a (Vector n a)
+```
+
+We can only use this when the first clock is faster than the second clock, and when the second
+clock is a natural number multiple of the first clock. So we can use this with
+`rhGiveEvery1Rh` and `rhTakeEvery2Rh`, but not with `rhGiveEvery3Rh` and `rhTakeEvery2RH`.
+
+Let try writing an alternate version of `rhGiveAndTake1` using `downSampleMillisecond`.
+
+```haskell
+rhGiveEvery1Rh >-- downSampleMillisecond -@- scheduleMillisecond --> rhTakeEvery2RH
+```
+
+If you try this, it won't type check. Thats because `downSampleMillisecond` tries to give 
+`rhTakeEvery2Rh` a vector, but `rhTakeEvery2Rh` wants an `Int`. But we can fix this.
+
+We could create our own `ResBuf` from scratch, but that seems hard. Instead, we have lots
+of nice operators for creating a new `ResBuf` from an existing one. We want to use
+`downSampleMillisecond`, but we don't want it to spit out a vector. We want to postcompose
+a function. `>>-^` allows us to do this. (`^->>` is for precomposition.)
+
+```haskell
+(>>-^) :: Monad m 
+       => ResamplingBuffer m cl1 cl2 a b 
+       -> ClSF m cl2 b c 
+       -> ResamplingBuffer m cl1 cl2 a c 
+```
+
+We know that the vector will never be empty, so we could safely use `V.head` or `V.last` to
+get a specific element. We actually know the size of the vector since we know the clock types,
+so we could use `V.index` to get a specific element of the vector. Our vector has length two
+so we can just use `V.head` or `V.last`. 
+
+```haskell
+rhGiveAndTake3 :: Rhine IO (SequentialClock IO Second Second2) () ()
+rhGiveAndTake3 =
+  rhGiveEvery1Rh
+  >-- (downsampleMillisecond >>-^ arr V.head)
+  -@- scheduleMillisecond
+  --> rhTakeEvery2Rh
+```
