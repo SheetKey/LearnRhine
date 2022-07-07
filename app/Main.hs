@@ -40,7 +40,7 @@ import FRP.Rhine
       ParallelClock(ParallelClock),
       Rhine(Rhine),
       ExceptT,
-      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded)
+      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback)
 import FRP.Rhine.ClSF.Except ()
 
 import qualified Data.Vector.Sized as V
@@ -48,9 +48,11 @@ import qualified Data.Vector.Sized as V
 import Control.Monad ( guard )
 import System.Exit (exitSuccess, exitFailure)
 import System.IO (hFlush, stdin, stdout)
+import Text.Read (readMaybe)
+import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow rhThing2Rh
+main = flow rhTestGetDouble
 
 --------------------------------------------------
 -- 1 second clock
@@ -250,3 +252,25 @@ rhThing2Rh =
   >-- fifoBounded 5
   -@- concurrently
   --> rhPutStringLnMaybeRh
+
+--------------------------------------------------
+-- Interpolation buffers
+--------------------------------------------------
+rhGetDoubleMaybe :: ClSF IO StdinClock () (Maybe Double)
+rhGetDoubleMaybe = safely rhGetInput >>> arr readMaybe
+
+rhMaybeDoubleStateful :: ClSF IO cl (Maybe Double, Double) (Double, Double)
+rhMaybeDoubleStateful = proc (mayBud, last) -> do
+  case mayBud of
+    Just dub -> returnA -< (dub, dub)
+    Nothing  -> returnA -< (last,last)
+
+rhMaybeToDouble :: ClSF IO cl (Maybe Double) Double
+rhMaybeToDouble = feedback 0 rhMaybeDoubleStateful
+
+rhGetDouble :: Rhine IO StdinClock () Double
+rhGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble
+
+rhTestGetDouble :: Rhine IO StdinClock () ()
+rhTestGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble >>> arrMCl print
+

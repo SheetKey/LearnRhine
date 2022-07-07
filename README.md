@@ -932,3 +932,90 @@ I used arrow notation to handle the case that `rhPutStringLnMaybe` gets `Nothing
 readable this way. The sequential composition is the same as before except that we now
 have `fifoBounded`. `fifoBounded` takes an argument of the maximum number of 
 values that should be saved.
+
+#### Interpolation buffers
+
+Interpolation buffers could be useful when the second clock is much faster that the first. In this
+case an interpolation buffer can pass approximate values to the second `Rhine` when there are no
+new values from the first `Rhine`. Rhine provides three types of interpolation buffers, 
+`linear`, `sinc`, and `cubic`. I'll start with `sinc`, and may not cover the other types, but they
+all seem similar enough in use (with a few quirks perhaps).
+
+```haskell
+sinc
+  :: (Monad m
+     , Clock m cl1
+	 , Clock m cl2
+	 , VectorSpace v
+	 , Ord (Groundfield v)
+	 , Floating (Groundfield v)
+	 , Groundfield v ~ Diff (Time cl1)
+	 , Groundfield v ~ Diff (Time cl2))
+  => Groundfield v
+  -> ResamplingBuffer m cl1 cl2 v v
+```
+
+Thats quite the type signiture. The first three constraints are nothing new, they ensure
+we have a monad and valid clocks. The rest is very new. The important parts are that the values
+we can use with this `ResBuf` must be a `VectorSpace`. Additionally the `Groundfield` 
+(which is a type not a typeclass) of the values must be `Ord` and `Floating`. What this means
+for us is that our values must have the properties of a vector. Rhine has `VectorSpace` instances
+for `Double` and `Float`, as well as tuples up to and including the 5-tuple.
+
+So our current string from `rhGetInputSafeRh` won't work, unless we want to make `String` into a
+vector space.
+
+```haskell
+rhGetDoubleMaybeRh :: Rhine IO StdinClock () (Maybe Double)
+rhGetDoubleMaybeRh = (@@ StdinClock) $ safely rhGetInput >>> arr readMaybe 
+```
+
+This `Rhine` might give us a double, or not. Since `Maybe Double` is not a `VectorSpace`,
+we need a way to always pass a `Double`. This creates a small problem. We need a way to turn
+a `Maybe Double` into a double. One possible solution is to create a signal function that
+will recieve a `Maybe Double` and in the case that it recieves a `Just`, outputs the value,
+in the case that it recieves `Nothing` on the first tick outputs a default value, and if it 
+recieves `Nothing`, returns the most recent value. This is like `State`. This might not be the
+best solution to the problem, but it is a useful example to introduce some more of rhine's
+tools.
+
+In rhine, we can create a stateful `ClSF` using the `feedback` function.
+
+```haskell
+feedback :: Monad m => c -> MSF m (a, c) (b, c) -> MSF m a b
+```
+
+The type signiture says `MSF`, but a `ClSF` is an `MSF` with a specific monad 
+(more on that later), so we can use this function. We can see that we accept a `c`, which
+is the initial value, and turns a `ClSF` of one type into another. The `c` in the tuples
+is our state. Its a value we can about only withing our signal function. 
+
+```haskell
+rhMaybeDoubleStateful :: ClSF IO cl (Maybe Double, Double) (Double, Double)
+rhMaybeDoubleStateful = proc (mayBud, last) -> do
+  case mayBud of
+    Just dub -> returnA -< (dub, dub)
+    Nothing  -> returnA -< (last,last)
+```
+
+This signal fuction will return the new `Double` in the case that it recieves a `Just x`,
+and will otherwise return the previous value.
+
+```haskell
+rhMaybeToDouble :: ClSF IO cl (Maybe Double) Double
+rhMaybeToDouble = feedback 0 rhMaybeDoubleStateful
+``` 
+
+Now we provide an initial value, I went with 0, and we have a safe `Maybe Double` to `Double`
+signal function that we can compose with `rhGetDoubleMaybe`.
+
+Before we start messing around with interpolation buffers lets make sure this works
+
+```haskell
+rhTestGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble >>> arrMCl print
+```
+
+It works as expected: If I input "q" it quits, some non-number it prints "0.0", some number
+that number and it continues to print that number for new non-number inputs.
+
+
