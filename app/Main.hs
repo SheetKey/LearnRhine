@@ -40,7 +40,7 @@ import FRP.Rhine
       ParallelClock(ParallelClock),
       Rhine(Rhine),
       ExceptT,
-      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback)
+      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback, sinc)
 import FRP.Rhine.ClSF.Except ()
 
 import qualified Data.Vector.Sized as V
@@ -52,7 +52,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow rhTestGetDouble
+main = flow test
 
 --------------------------------------------------
 -- 1 second clock
@@ -274,3 +274,8 @@ rhGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble
 rhTestGetDouble :: Rhine IO StdinClock () ()
 rhTestGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble >>> arrMCl print
 
+rhPrintDubRh :: Rhine IO Second Double ()
+rhPrintDubRh = arrMCl print @@ waitClock
+
+test :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+test = rhGetDouble >-- sinc 100 -@- concurrently --> rhPrintDubRh

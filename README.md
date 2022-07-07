@@ -1018,4 +1018,13 @@ rhTestGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble >>> arr
 It works as expected: If I input "q" it quits, some non-number it prints "0.0", some number
 that number and it continues to print that number for new non-number inputs.
 
+Now lets see if we can put the pieces together using `sinc`. For now we'll keep the second 
+`Rhine` simple and just print values every second.
 
+```haskell
+rhPrintDubRh :: Rhine IO Second Double ()
+rhPrintDubRh = arrMCl print @@ waitClock
+```
+
+We'll use the `concurrently` schedule. The documentation for `sinc` says that the window of
+saved values should be much larger than the rate of `cl1`. 
