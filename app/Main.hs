@@ -40,7 +40,7 @@ import FRP.Rhine
       ParallelClock(ParallelClock),
       Rhine(Rhine),
       ExceptT,
-      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback, sinc)
+      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback, sinc, cubic, linear)
 import FRP.Rhine.ClSF.Except ()
 
 import qualified Data.Vector.Sized as V
@@ -52,7 +52,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow test
+main = flow rhLinearDubRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -277,5 +277,11 @@ rhTestGetDouble = (@@ StdinClock) $ rhGetDoubleMaybe >>> rhMaybeToDouble >>> arr
 rhPrintDubRh :: Rhine IO Second Double ()
 rhPrintDubRh = arrMCl print @@ waitClock
 
-test :: Rhine IO (SequentialClock IO StdinClock Second) () ()
-test = rhGetDouble >-- sinc 100 -@- concurrently --> rhPrintDubRh
+rhSincDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhSincDubRh = rhGetDouble >-- sinc 100 -@- concurrently --> rhPrintDubRh
+
+rhCubicDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhCubicDubRh = rhGetDouble >-- cubic -@- concurrently --> rhPrintDubRh
+
+rhLinearDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhLinearDubRh = rhGetDouble >-- linear 0 0 -@- concurrently --> rhPrintDubRh

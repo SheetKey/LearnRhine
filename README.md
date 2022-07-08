@@ -1027,4 +1027,57 @@ rhPrintDubRh = arrMCl print @@ waitClock
 ```
 
 We'll use the `concurrently` schedule. The documentation for `sinc` says that the window of
-saved values should be much larger than the rate of `cl1`. 
+saved values should be much larger than the rate of `cl1`. `cl1` is `StdinClock` so it doesn't
+really have a rate. Best to test a few different values.
+
+```haskell
+rhSincDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhSincDubRh = rhGetDouble >-- sinc 100 -@- concurrently --> rhPrintDubRh
+```
+
+Inputing various numbers and watching the output of interpolated values appears to be 
+oscillatory, which is to be expected with `sinc`.
+
+Why don't we give `cubic` a try.
+
+```haskell
+cubic :: (Monad m, VectorSpace v, Groundfield v ~ Diff (Time cl1), Groundfield v ~ Diff (Time cl2)) 
+      => ResamplingBuffer m cl1 cl2 v v
+```
+
+`cubic` also requires that `v` is a `VectorSpace`, but it takes no arguments. The documentation
+notes that since `cubic` approximates derivatives, it is delayed by two inputs from the first
+`Rhine`. 
+
+```haskell
+rhCubicDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhCubicDubRh = rhGetDouble >-- cubic -@- concurrently --> rhPrintDubRh
+```
+
+Well it appears to be interpolating away. Before we provide any values, `cubic` passes "0.0"
+to the second `Rhine`, which makes sense. 
+
+Finally lets do `linear`. 
+
+```haskell
+linear
+  :: (Monad m, Clock m cl1, Clock m cl2, VectorSpace v, Groundfield v ~ Diff (Time cl1), Groundfield v ~ Diff (Time cl2))
+  => v
+  -> v
+  -> ResamplingBuffer m cl1 cl2 v v
+```
+
+The first argument is the initial velocity and the second is the initial position. Lets start
+off with both equal to 0.
+
+```haskell
+rhLinearDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
+rhLinearDubRh = rhGetDouble >-- linear 0 0 -@- concurrently --> rhPrintDubRh
+```
+
+It's more clear how `linear` works than how `sinc` or `cubic` do. Linear bases its 
+approximation based on the two most recent inputs. If we input "1" first, then we should
+be outputing points on the line y = x. If we input 1 a second time, we now only output 1.
+The new approximation uses the most recent inputs, 1 and 1, which is just a horizontal line.
+The implementation of `linear` is to start with a `keepLast` buffer, and compose it with functions
+to create a linear approximation. 
