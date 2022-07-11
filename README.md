@@ -1081,3 +1081,59 @@ be outputing points on the line y = x. If we input 1 a second time, we now only 
 The new approximation uses the most recent inputs, 1 and 1, which is just a horizontal line.
 The implementation of `linear` is to start with a `keepLast` buffer, and compose it with functions
 to create a linear approximation. 
+
+## Behaviors
+
+In rhine a `BehaviorF` is a `ClSF` 
+["which is clock polymorphic over a given time domain."](https://www.manuelbaerenz.de/files/Rhine.pdf) 
+What does this mean? We first need to dive a little deeper into the world of clocks. In rhine 
+`Clock` is a typeclass rather than a type.
+
+```haskell
+class TimeDomain (Time cl) => Clock m cl where
+  type Time cl
+  type Tag cl
+  initClock
+    :: cl
+    -> RunninClockInit m (Time cl) (Tag cl)
+```
+
+We've already talked about the `Time` and `Tag` associated types and I think we know enough about
+them for now. The `initClock` function just starts the clock up. What we really care about at
+this moment is the constraint on `cl`. The `Time` of the `cl` must have an instance in
+`TimeDomain`.
+
+```haskell
+class TimeDomain time where
+  type Diff time
+  diffTime :: time -> time -> Diff time
+```
+
+So to have a valid clock, we need to be able to calculate the difference between any two times.
+Rhine provides `TimeDomain` instances for `Double`, `Float`, `Integer`, `()`, `UTCTime`, for
+`Num a`, but this last one is a special case thats a bit more involved. For `Double`, `Float`,
+and `Integer` the `diffTime` function is `(-)`. For `()` the `diffTime` is always just `()`.
+For `UTCTime`, `Diff UTCTime = Double`, and 
+`diffTime t1 t2 = realToFrac $ diffUTCTime t1 t2`. Seems fairly straighforward. 
+
+We know the `Tag` for `StdinClock` is a `String`, we've used this a lot. Its `Time` is 
+`UTCTime`, which as we've learned has a valid instance in `TimeDomain`. 
+`Millisecond n` also uses `UTCTime`. When we say that a `BehaviorF` is clock polymorphic
+over a given time doamin we mean that it should behave the exact same for different clocks so
+long as they have the same `Time cl` type, which ensures they have the same `Diff time` type.
+
+```haskell
+type BehaviorF m time a b = forall cl. time ~ Time cl => ClSF m cl a b
+```
+
+So we could write a `BehaviorF` using `UTCTime`, that behaves the same for `StdinClock` and
+`Millisecond n`. Rhine provides some useful behavior functions already such as 
+`integral`, `derivative`, and `average`. More can be found [here](https://hackage.haskell.org/package/rhine-0.5.1.1/docs/FRP-Rhine-ClSF-Util.html#v:integral).
+
+Since a `BehaviorF` is a `ClSF`, we can compose the two.
+
+```haskell
+rhPrintIntegral :: ClSF IO Second () ()
+rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
+```
+

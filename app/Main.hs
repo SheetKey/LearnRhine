@@ -6,6 +6,7 @@ module Main where
 import FRP.Rhine
     ( returnA,
       (>>>),
+      (>->),
       safe,
       safely,
       arrMCl,
@@ -23,6 +24,7 @@ import FRP.Rhine
       schedPar1',
       schedPar2,
       schedPar2',
+      integral,
       (@@),
       (@||),
       (||@),
@@ -52,7 +54,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow rhLinearDubRh
+main = flow $ test @@ waitClock
 
 --------------------------------------------------
 -- 1 second clock
@@ -285,3 +287,9 @@ rhCubicDubRh = rhGetDouble >-- cubic -@- concurrently --> rhPrintDubRh
 
 rhLinearDubRh :: Rhine IO (SequentialClock IO StdinClock Second) () ()
 rhLinearDubRh = rhGetDouble >-- linear 0 0 -@- concurrently --> rhPrintDubRh
+
+--------------------------------------------------
+-- Behavior functions
+--------------------------------------------------
+rhPrintIntegral :: ClSF IO Second () ()
+rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
