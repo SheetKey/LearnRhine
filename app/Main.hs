@@ -3,6 +3,8 @@
 
 module Main where
 
+import qualified Example1 as E1
+
 import FRP.Rhine
     ( returnA,
       (>>>),
@@ -54,7 +56,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow $ rhPrintIntegral @@ waitClock
+main = E1.test
 
 --------------------------------------------------
 -- 1 second clock

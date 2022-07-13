@@ -2,3 +2,6 @@ cradle:
   cabal:
     - path: "app/Main.hs"
       component: "LearnRhine:exe:Example"
+
+    - path: "app/Example1.hs"
+      component: "LearnRhine:exe:Example"

@@ -27,7 +27,7 @@ executable Example
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:    Example1
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
