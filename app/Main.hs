@@ -54,7 +54,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow $ test @@ waitClock
+main = flow $ rhPrintIntegral @@ waitClock
 
 --------------------------------------------------
 -- 1 second clock

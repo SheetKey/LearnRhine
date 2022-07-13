@@ -1137,3 +1137,12 @@ rhPrintIntegral :: ClSF IO Second () ()
 rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
 ```
 
+### Example
+
+This will be a walkthough of a small but more involved use of rhine. I'll try not to introduce 
+anything new but will focus on showing how we can piece together the things we already know
+to make a more interesting program. So far I have gone through in more detail much of what was 
+covered in [the rhine paper](https://www.manuelbaerenz.de/files/Rhine.pdf), and so this 
+example will be similar to the example used in th paper, but with a few more interesting elements.
+
+
