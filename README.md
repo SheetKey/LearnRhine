@@ -1145,4 +1145,120 @@ to make a more interesting program. So far I have gone through in more detail mu
 covered in [the rhine paper](https://www.manuelbaerenz.de/files/Rhine.pdf), and so this 
 example will be similar to the example used in th paper, but with a few more interesting elements.
 
+All of the examples so far are included in `main.hs`, but for this example will be found in 
+`Example1.hs`.
 
+We'll start by bringing over out previously used function to get user input and quit the program
+on "q". (This is redundant but I like having everything in one place.)
+
+The goal of this project is to simulate movement. FRP is often used in a video game context,
+so this will be our attempt at simulating player movement. We'll need a function
+to check if the user input is some combo of WASD, and if it is, we'll adjust velocity
+accordingly. We'll assume that the player is holding down the keys in between inputs,
+since we're rather limited with what we can do on the command line. Additionally I'll consider
+the "x" key to mean "lift all fingers." To make things more interesting we'll do things in a 
+plane. 
+
+```haskell
+type XVel = Double
+type YVel = Double
+type Vel = (XVel, YVel)
+```
+
+We'll start with a pure function to handle the input `String`. We will usually want to 
+lift pure functions into a `ClSF` context, although we can often just use lambdas.
+We'ss use some directions to manager where we're moving.
+
+
+## Events and Stdin
+
+One of the most important parts of rhine is the philosophy that ["event sources are clocks."](https://hackage.haskell.org/package/rhine-0.5.1.1/docs/FRP-Rhine-Clock-Realtime-Event.html)
+So far the only event we have used is getting std input. Rhine has a module called
+`FRP.Rhine.Clock.Realtime.Event` that provides the `EventClock` type and many useful functions
+for creating event clocks. You might think, as I did, that `StdinClock` must be an `EventClock`,
+but it is not. Lets first look into how `StdinClock` works and then see if we can learn about 
+`EventClock`
+
+### `StdinClock`
+
+To be able to understand `StdinClock`, we need to know what a clock actually is in rhine.
+
+```haskell
+class TimeDomain (Time cl) => Clock m cl where
+  type Time cl
+  type Tag cl
+  initClock
+    :: cl 
+    -> RunningClockInit m (Time cl) (Tag cl) 
+```
+
+We've looked at this before when discussing `BehaviorF`, so most of this typeclass should be
+familiar. The only part we haven't looked at is the `initClock` method. It takes a clock.
+This is only really important for clocks made of other clocks. For example, the 
+`Millisecond n` clock is made from a fixed step clock that is rescaled to use `UTCTime`. So
+for `Millisecond n`, `initClock` pattern matches the `Millisecond n` data constructor and 
+calls `initClock` on the clock within this data constructor. But we won't worry too much about
+this for now since we care about `StdinClock`. 
+
+```haskell
+data StdinClock = StdinClock
+```
+
+This is the entire `StdinClock` type. Since it has a value constructor, its definition of
+`initClock` can, and does, completely ignore the `cl` argument.
+Clearly all the functionality of this clock will come from the typeclasses it has instances in.
+This could be something to keep in mind when we make our own clocks in the future.
+
+Before we get `StdinClock`'s `Clock` instance, we should know what a `RunningClockInit` is.
+
+```haskell
+type RunningClock m time tag = MSF m () (time, tag)
+
+type RunningClockInit m time tag = m (RunningClock m time tag, time)
+```
+
+Here we see that a `RunningClockInit` is just a tuple of a `RunningClock` and a time in some
+monadic context. The `time` is the time at which the clock is initialized. For clocks that 
+don't use `UTCTime`, this value is less meaninful and is often just 0.
+
+A `RunningClock` is a `MSF`. An `MSF` was breifly mentioned before. Its what a `ClSF` is made 
+from. Its a stream with no clock. A clock is a stream on times and tags, so its an `MSF`. 
+Anything we could do to a `MSF` we can do to a `ClSF`. Some of the functions will have slightly
+different names but they do the same things. We won't be using `MSF` unless we're making clocks,
+but they shouldn't be any trouble.
+
+Finally we get to see how `StdinClock` works.
+
+```haskell
+instance MonadIO m => Clock m StdinClock where
+  type Time StdinClock = UTCTime
+  type Tag  StdinClock = String
+
+  initClock _ = do
+    initialTime <- liftIO getCurrentTime
+    return
+      ( constM $ liftIO $ do
+          line <- getLine
+          time <- getCurrentTime
+          return (time, line)
+      , initialTime
+      )
+```
+
+We know `StdinClock` used `IO`, so its monad must have an instance in `MonadIO`. We've already
+talked about the `Time` and `Tag`. 
+
+`initClock` gets the initial time that we will use in the `RunningClockInit` tuple.
+Then it returns, in `MonadIO m`, a tuple.
+
+We have used `constMCl` often to create a constant `ClSF`. `constM` is exactly the same but it
+creates an `MSF` rather than a `ClSF`. So it creates a constant `MSF` that gets the line,
+the time when the line is got, and then returns a tuple of time and tag. So when we use
+`tagS`, its getting the `line` from the `RunningClock`. `timeS` would get the time. 
+
+So what actually uses `initClock`? It took me a while to find but its `flow`. This makes sence
+since `flow` takes a `Rhine`, and a `Rhine` is the first structure that holds a clock. So
+the next question is how does `flow` work?
+
+
+### `flow`
