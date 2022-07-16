@@ -22,75 +22,26 @@ rhGetLine = safely $ do
   once_ exitSuccess
 
 rhGetLineRh :: Rhine IO StdinClock () String
-rhGetLineRh = rhGetInput @@ StdinClock
+rhGetLineRh = rhGetLine @@ StdinClock
 
 type XVel = Double
 type YVel = Double
 type Vel = (XVel, YVel)
-data Direction =
-    North
-  | East
-  | South
-  | West
-  | NorthEast
-  | NorthWest
-  | SouthEast
-  | SouthWest
-  | Still
-  deriving (Eq, Show)
-
-instance Semigroup Direction where
-  a <> a = a
-  a <> Still = a
-  Still <> a = a
-  North <> East = NorthEast
-  North <> West = NorthWest
-  North <> NorthEast = North
-  North <> NorthWest = North
-  North <> _ = Still
-  East  <> North = NorthEast
-  East  <> South = SouthEast
-  East  <> NorthEast = East
-  East  <> SouthEast = East
-  East  <> _ = Still
-  South <> East = SouthEast
-  South <> West = SouthWest
-  South <> SouthEast = South
-  South <> SouthWest = South
-  South <> _ = Still
-  West  <> North = NorthWest
-  West  <> South = SouthWest
-  West  <> NorthWest = West
-  West  <> SouthWest = West
-  West  <> _ = Still
-  NorthEast <> North = North
-  NorthEast <> East = East
-  NorthEast <> SouthEast = South
-  NorthEast <> NorthWest = North
-  NorthEast <> _ = Still
-  NorthWest <> North = North
-  NorthWest <> West = West
-  NorthWest <> NorthEast = North
-  NorthWest <> SouthWest = West
-  NorthWest <> _ = Still
-  SouthEast <> South = South
-  SouthEast <> East = East
-  SouthEast <> SouthWest = South
-  SouthEast <> NorthEast = East
-  SouthEast <> _ = Still
-  SouthWest <> South = South
-  SouthWest <> West = West
-  SouthWest <> SouthEast = South
-  SouthWest <> NorthWest = West
-  SouthWest <> _ = Still
   
-  
+xVel :: String -> XVel
+xVel [] = 0
+xVel (c:cs) | c == 'a' = (-5) + xVel cs
+            | c == 'd' = 5    + xVel cs
+            | otherwise = xVel cs
 
-checkDir :: String -> Direction
-checkDir []     = Still
-checkDir (c:cs) | c == "w" = North <> checkDir cs
-                | c == "a" = West  <> checkDir cs
-                | c == "s" = South <> checkDir cs
-                | c == "d" = East  <> checkDir cs
+yVel :: String -> YVel
+yVel [] = 0
+yVel (c:cs) | c == 'w' = 5    + yVel cs
+            | c == 's' = (-5) + yVel cs
+            | otherwise = yVel cs
 
-test = print $ checkDir "wa"
+vel :: String -> Vel
+vel str = (xVel str, yVel str)
+-- I NEED TO NORMALIZE THE VELOCITY
+test :: IO ()
+test = print $ vel "wa"
