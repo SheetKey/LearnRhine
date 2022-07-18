@@ -1137,7 +1137,7 @@ rhPrintIntegral :: ClSF IO Second () ()
 rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
 ```
 
-### Example
+<!-- ### Example
 
 This will be a walkthough of a small but more involved use of rhine. I'll try not to introduce 
 anything new but will focus on showing how we can piece together the things we already know
@@ -1169,6 +1169,7 @@ We'll start with a pure function to handle the input `String`. We will usually w
 lift pure functions into a `ClSF` context, although we can often just use lambdas.
 We'ss use some directions to manager where we're moving.
 
+-->
 
 ## Events and Stdin
 
@@ -1262,3 +1263,49 @@ the next question is how does `flow` work?
 
 
 ### `flow`
+
+Lets just dive in.
+
+```haskell
+flow :: ( Monad m, Clock m cl
+     , Time cl ~ Time (In  cl)
+     , Time cl ~ Time (Out cl)
+     )
+     => Rhine m cl () () -> m ()
+flow Rhine {..} = do
+  (runningClock, initTime) <- initClock clock
+  flow' runningClock $ createTickable
+    (trivialResamplingBuffer clock)
+    sn
+    (trivialResamplingBuffer clock)
+    initTime
+    where
+      flow' runningClock tickable = do
+        ((now, tag), runningClock') <- unMSF runningClock ()
+        tickable' <- tick tickable now tag
+        flow' runningClock' tickable'
+```
+
+There are type constraints that we should be familiar with at this point.
+`flow` takes a `Rhine`, and uses record syntax to have access to the getters `sn` and `clock`
+withing the function. It first uses `initClock` to get the `RunningClock` and initialization time.
+
+`flow'` takes a `RunningClock` and a `Tickable`. The names of things are pretty straightforward.
+A `Tickable` is a thing that can be ticked. `createTickable` creates one from our `Rhine`.
+We can wee that `createTickable` takes an input `ResBuf` which is trivial (`()` as input and
+output), the signal network contained in the `Rhine` type, an output `ResBuf` that is also
+trivial, and the initial time.
+
+As mentioned previously, a `RunningClock` is a `MSF` which is a `ClSF` with no clock. 
+`unMSF` is the getter for an `MSF` (again record syntax. Note that since rhine is built on top
+of dunai, `MSF` comes from the dunai library.) So `unMSF` runs `runningClock` with input `()`. 
+If we refer back to the `RunningClock` type, it is an `MSF` that takes `()` as input and 
+outputs `(time, tag)`. `unMSF` gives us this tuple as well as a new `RunningClock`. 
+Finally the tickable thing is ticked, createing a new tickable thing and potentially producing
+side effects. And then `flow` is called with the new stuff. That gives some nice intuition about
+how rhine runs a program, but we won't look into this further. `tick` is rather complex and 
+won't provide much intuition for us. It is interesting but its complexity has to do with 
+breaking down the various types of `SN`s (`Sequential`, `Parallel`, and `Synchronous`).
+
+But now we know when how `initClock` works for `StdinClock` and when `initClock` is actually used.
+So lets move on and talk about `EventClock`.
