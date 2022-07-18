@@ -4,47 +4,9 @@
 module Main where
 
 import qualified Example1 as E1
+import qualified Stdin as S
 
 import FRP.Rhine
-    ( returnA,
-      (>>>),
-      (>->),
-      safe,
-      safely,
-      arrMCl,
-      constMCl,
-      once_,
-      runClSFExcept,
-      throwOn',
-      try,
-      tagS,
-      scheduleMillisecond,
-      waitClock,
-      flow,
-      concurrently,
-      schedPar1,
-      schedPar1',
-      schedPar2,
-      schedPar2',
-      integral,
-      (@@),
-      (@||),
-      (||@),
-      (||||),
-      (>--),
-      (-@-),
-      (-->),
-      Empty,
-      ClSF,
-      ClSFExcept,
-      Millisecond,
-      StdinClock(..),
-      SN(Synchronous),
-      ParClock,
-      ParallelClock(ParallelClock),
-      Rhine(Rhine),
-      ExceptT,
-      Arrow (arr), keepLast, SequentialClock, downsampleMillisecond, (>>-^), arrM, fifoBounded, (>>^), ArrowLoop (loop), feedback, sinc, cubic, linear)
 import FRP.Rhine.ClSF.Except ()
 
 import qualified Data.Vector.Sized as V
@@ -56,7 +18,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = E1.test
+main = S.test
 
 --------------------------------------------------
 -- 1 second clock
@@ -295,3 +257,21 @@ rhLinearDubRh = rhGetDouble >-- linear 0 0 -@- concurrently --> rhPrintDubRh
 --------------------------------------------------
 rhPrintIntegral :: ClSF IO Second () ()
 rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
+
+--------------------------------------------------
+-- Periodic and hoist clocks
+--------------------------------------------------
+
+type MyPeriodic = Periodic '[500, 1000]
+type UnPeriodic = HoistClock (ScheduleT Integer IO) IO MyPeriodic
+
+rhEveryNowAndThen :: Monad m => ClSF m MyPeriodic arbitrary String
+rhEveryNowAndThen = sinceInitS >>> proc time ->
+  returnA -< unwords ["It's now", show time, "o'clock."]
+
+rhPrintEveryNowAndThen :: MonadIO m => ClSF (ScheduleT Integer m) MyPeriodic () ()
+rhPrintEveryNowAndThen = rhEveryNowAndThen >-> arrMCl (liftIO . putStrLn) 
+
+rhPrintEveryNowAndThenRh :: Rhine IO UnPeriodic () ()
+rhPrintEveryNowAndThenRh = hoistClSFAndClock runScheduleIO rhPrintEveryNowAndThen
+                         @@ HoistClock Periodic runScheduleIO

@@ -1171,16 +1171,11 @@ We'ss use some directions to manager where we're moving.
 
 -->
 
-## Events and Stdin
+## `StdinClock`
 
 One of the most important parts of rhine is the philosophy that ["event sources are clocks."](https://hackage.haskell.org/package/rhine-0.5.1.1/docs/FRP-Rhine-Clock-Realtime-Event.html)
-So far the only event we have used is getting std input. Rhine has a module called
-`FRP.Rhine.Clock.Realtime.Event` that provides the `EventClock` type and many useful functions
-for creating event clocks. You might think, as I did, that `StdinClock` must be an `EventClock`,
-but it is not. Lets first look into how `StdinClock` works and then see if we can learn about 
-`EventClock`
-
-### `StdinClock`
+So far the only event we have used is getting std input. Lets dive into how this clock actually
+works.
 
 To be able to understand `StdinClock`, we need to know what a clock actually is in rhine.
 
@@ -1261,7 +1256,6 @@ So what actually uses `initClock`? It took me a while to find but its `flow`. Th
 since `flow` takes a `Rhine`, and a `Rhine` is the first structure that holds a clock. So
 the next question is how does `flow` work?
 
-
 ### `flow`
 
 Lets just dive in.
@@ -1309,3 +1303,97 @@ breaking down the various types of `SN`s (`Sequential`, `Parallel`, and `Synchro
 
 But now we know when how `initClock` works for `StdinClock` and when `initClock` is actually used.
 So lets move on and talk about `EventClock`.
+## Even more clocks!
+
+We've looked at lots of different clocks so far, but theres still some important ones that will
+allow us to fully customize our clocks. 
+
+### Periodic and hoist clocks
+
+The periodic clock ticks periodically based on a type level list of naturals. 
+
+```haskell
+data Periodic (v :: [Nat]) where
+  Periodic :: Periodic (n ': ns)
+```
+
+The documentation gives and example of when `Periodic '[1, 2]` would tick, but it seems to be
+incorrect. This clock would actually tick at 1,3,4,6,7,9,10,12, etc. The next tick adds the next
+value in the list. So first: 1, second: 1+2=3, third: 1+2+1=4, etc. 
+
+The instance in the `Clock` typeclass looks like this.
+
+```haskell
+(Monad m, NonemptyNatList v) => Clock (ScheduleT Integer m) (Periodic v)
+```
+
+The monad exists withing a the `ScheduleT` transformer. So far all of our `Rhine`s have had only
+the `IO` monad. If we run `flow` with a `Periodic` clock, we would not get a type of
+`IO ()`, and thus could not use the periodic clock as our main function. It would have type
+`(ScheduleT Integer IO) ()`. This is where hoisting comes into play. Since clocks are data are
+separate in rhine, but the monad with which a `ClSF` has side effects is both for the data and
+the clock, we have to hoist both separately. 
+
+Rhine gives us the `HoistClock` type for type level monad morphism.
+
+```haskell
+data HoistClock m1 m2 cl = HoistClock 
+  { unhoistedClock :: cl
+  , monadMorphism  :: forall a . m1 a -> m2 a
+  }
+```
+
+But we will need to hoist both the clock and the `ClSF`.
+
+```haskell
+hoistClSFAndClock :: (Monad m1, Monad m2) 
+                  => (forall c. m1 c -> m2 c) 
+                  -> ClSF m1 cl a b 
+                  -> ClSF m2 (HoistClock m1 m2 cl) a b
+```
+
+We provide a function, a `ClSF`, and get back a `ClSF` with a new monad and a hoisted clock.
+(Note that if you want only to change the monad of the `ClSF` there is `hoistClSF`.)
+
+On the rhine github page there is an example of using the `Periodic` clock. The example is not
+very useful since it converts `ScheduleT Integer IO` to `IO` after flow has been called.
+This method does not scale and would cause issues useing periodic clocks within larger programs.
+I have adapted the example to use hoisting to create a more reproducable example.
+
+```haskell
+type MyPeriodic = Periodic '[500, 1000]
+type UnPeriodic = HoistClock (ScheduleT Integer IO) IO MyPeriodic
+
+rhEveryNowAndThen :: Monad m => ClSF m MyPeriodic arbitrary String
+rhEveryNowAndThen = sinceInitS >>> proc time ->
+  returnA -< unwords ["It's now", show time, "o'clock."]
+
+rhPrintEveryNowAndThen :: MonadIO m => ClSF (ScheduleT Integer m) MyPeriodic () ()
+rhPrintEveryNowAndThen = rhEveryNowAndThen >-> arrMCl (liftIO . putStrLn) 
+```
+
+(Nothing but name changes from the original example.)
+We have some type synonyms. `MyPeriodic` ticks at 500, 1500, 2000, 3000, 3500, etc.
+`UnPeriodic` is my addition. This is the hoisted clock. We can call `flow` on this clock type
+and get a main function that is `IO ()`, rather than the `ScheduleT` transformer.
+
+`rhEveryNowAndThen` returns a string of the time when it ticks.
+`rhPrintEveryNowAndThen` prints this string.
+
+We could make this into a `Rhine` using `(@@ Periodic)`, but we would not be able to use this 
+`Rhine` as our main function. So instead, we do some hoisting.
+
+```haskell
+rhPrintEveryNowAndThenRh :: Rhine IO UnPeriodic () ()
+rhPrintEveryNowAndThenRh = hoistClSFAndClock runScheduleIO rhPrintEveryNowAndThen
+                         @@ HoistClock Periodic runScheduleIO
+```
+
+`hoistClSFAndClock` is given `runScheduleIO :: (MonadIO m, Integral n) => ScheduleT n m a -> m a`.
+We then provide a `HoistClock`. The `HoistClock` data constructor takes the unhoisted clock,
+which in this case is the `Periodic` value constructor, and a monad morphism, which is the same
+as before: `runScheduleIO`. 
+
+`runScheduleIO` treats the type level list of nats as milliseconds, which is why we now have `IO`.
+We could make our own using `runScheduleT :: (diff -> m ()) -> ScheduleT diff m a -> m a` should
+we want an alternate definition.
