@@ -4,10 +4,10 @@
 module Main where
 
 import qualified Example1 as E1
-import qualified Stdin as S
 
 import FRP.Rhine
 import FRP.Rhine.ClSF.Except ()
+import Control.Monad.Schedule
 
 import qualified Data.Vector.Sized as V
 
@@ -18,7 +18,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = S.test
+main = flow checkOrPrintRh
 
 --------------------------------------------------
 -- 1 second clock
@@ -261,7 +261,6 @@ rhPrintIntegral = arr (const (10 :: Double)) >>> integral >>> arrMCl print
 --------------------------------------------------
 -- Periodic and hoist clocks
 --------------------------------------------------
-
 type MyPeriodic = Periodic '[500, 1000]
 type UnPeriodic = HoistClock (ScheduleT Integer IO) IO MyPeriodic
 
@@ -275,3 +274,27 @@ rhPrintEveryNowAndThen = rhEveryNowAndThen >-> arrMCl (liftIO . putStrLn)
 rhPrintEveryNowAndThenRh :: Rhine IO UnPeriodic () ()
 rhPrintEveryNowAndThenRh = hoistClSFAndClock runScheduleIO rhPrintEveryNowAndThen
                          @@ HoistClock Periodic runScheduleIO
+
+--------------------------------------------------
+-- Select Clock
+--------------------------------------------------
+type SelectString = SelectClock StdinClock String 
+
+checkQ :: ClSF IO SelectString () String
+checkQ = tagS
+
+quitProgram :: ClSF IO SelectString String ()
+quitProgram = proc _ -> constMCl exitSuccess -< ()
+
+quitRh :: Rhine IO SelectString () ()
+quitRh = checkQ >-> quitProgram @@ SelectClock StdinClock
+         (\str -> if str == "q"
+                  then Just "q"
+                  else Nothing)
+
+checkOrPrintRh :: Rhine
+  IO
+  (ParallelClock IO StdinClock (SelectClock StdinClock String))
+  ()
+  ()
+checkOrPrintRh = rhPrintMyLineRh ||@ schedSelectClockAndMain @|| quitRh 

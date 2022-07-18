@@ -1405,3 +1405,12 @@ type LiftClock m t cl = HoistClock m (t m) cl
 ```
 
 for monad transformers.
+### Busy clock
+
+This ones pretty straight forward. Ticks as soon as all the necessary computation for the tick
+is complete. 
+
+### Select clock
+
+This is a way we can create a clock that ticks only for a specified tag of the main clock.
+We could use this to validate our user input with `StdinClock`. 

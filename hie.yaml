@@ -5,6 +5,3 @@ cradle:
 
     - path: "app/Example1.hs"
       component: "LearnRhine:exe:Example"
-
-    - path: "app/Stdin.hs"
-      component: "LearnRhine:exe:Example"
