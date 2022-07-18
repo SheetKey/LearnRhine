@@ -1397,3 +1397,11 @@ as before: `runScheduleIO`.
 `runScheduleIO` treats the type level list of nats as milliseconds, which is why we now have `IO`.
 We could make our own using `runScheduleT :: (diff -> m ()) -> ScheduleT diff m a -> m a` should
 we want an alternate definition.
+
+Note that there is also
+
+```haskell
+type LiftClock m t cl = HoistClock m (t m) cl
+```
+
+for monad transformers.
