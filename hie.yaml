@@ -1,5 +1,8 @@
 cradle:
   cabal:
+    - path: "game/Main.hs"
+      component: "LearnRhine:exe:Game"
+
     - path: "app/Main.hs"
       component: "LearnRhine:exe:Example"
 
