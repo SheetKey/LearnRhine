@@ -6,8 +6,9 @@ module Main where
 import qualified Example1 as E1
 
 import FRP.Rhine
-import FRP.Rhine.ClSF.Except ()
+import FRP.Rhine.ClSF.Except 
 import Control.Monad.Schedule
+import Data.Void
 
 import qualified Data.Vector.Sized as V
 
@@ -57,7 +58,7 @@ rhValidate = proc str -> do
 rhValidatePrint :: ClSF (ExceptT () IO) StdinClock () ()
 rhValidatePrint = rhGetLine >>> rhValidate >>> runClSFExcept (safe (arrMCl putStrLn))
 
-rhUseInput :: ClSFExcept IO StdinClock () () Empty
+rhUseInput :: ClSFExcept IO StdinClock () () Void
 rhUseInput = do
   try rhValidatePrint
   once_ exitSuccess
@@ -80,7 +81,7 @@ rhCheckInput = proc str -> do
 rhCheckPrint :: ClSF (ExceptT String IO) StdinClock () ()
 rhCheckPrint = rhGetLine >>> rhCheckInput >>> runClSFExcept (safe (arrMCl putStrLn))
 
-rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Void
 rhCheckUseInput = do
   str <- try rhCheckPrint
   case str of
@@ -185,7 +186,7 @@ rhGiveAndTake3 =
 rhValidateString :: ClSF (ExceptT () IO) StdinClock () String
 rhValidateString = rhGetLine >>> rhValidate
 
-rhGetInput :: ClSFExcept IO StdinClock () String Empty
+rhGetInput :: ClSFExcept IO StdinClock () String Void
 rhGetInput = do
   try rhValidateString
   once_ exitSuccess

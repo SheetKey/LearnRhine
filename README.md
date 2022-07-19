@@ -198,7 +198,7 @@ First, our goal when using `ClSFExcept` is to handle every exception. We do this
 we can then use the `safely` function.
 
 ```haskell
-safely :: Monad m => MSFExcept m a b Empty -> MSF m a b
+safely :: Monad m => MSFExcept m a b Void -> MSF m a b
 ```
 
 We can see from the type signiture that we cannot allow for any exceptions, and the type
@@ -351,7 +351,7 @@ Okay that was a lot but we're nearly there. Now we can return to talking about `
 We'll create a function
 
 ```haskell
-rhUseInput :: ClSFExcept IO StdinClock () () Empty
+rhUseInput :: ClSFExcept IO StdinClock () () Void
 ```
 
 This function takes nothing and should return nothing and should never throw an exception.
@@ -360,7 +360,7 @@ of our program and manage desired splits.
 So now we get to use `try` and `once_` that we talked about earlier.
 
 ```haskell
-rhUseInput :: ClSFExcept IO StdinClock () () Empty
+rhUseInput :: ClSFExcept IO StdinClock () () Void
 rhUseInput = do
   try rhValidatePrint
   once_ exitSuccess
@@ -411,7 +411,7 @@ This is the same as our previous `rhValidate` but now we throw an exception if t
 when someone types "Hello". Attempt 1 (`rhCheckPrint` is the same as `rhValidatePrint`):
 
 ```haskell
-rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Void
 rhCheckUseInput = do
   str <- try rhCheckPrint
   case str of
@@ -438,7 +438,7 @@ Thats a problem but we can probably fix it. What if we don't make `rhCheckUseInp
 recursive, and let `flow` deal with the looping. Attempt 2:
 
 ```haskell
-rhCheckUseInput :: ClSFExcept IO StdinClock () () Empty
+rhCheckUseInput :: ClSFExcept IO StdinClock () () Void
 rhCheckUseInput = do
   str <- try rhCheckPrint
   case str of
@@ -449,8 +449,8 @@ rhCheckUseInput = do
 
 The function is no longer recursive, but that means I can't use `once_` to print "Hi!", since
 once throws an exception (note that the reason `once_ exitSuccess` doesn't cause a type error
-is that `exitSuccess` has the type `IO Empty` in this case, so `once_` throws the
-`Empty` exception, which is nothing). 
+is that `exitSuccess` has the type `IO Void` in this case, so `once_` throws the
+`Void` exception, which is nothing). 
 Instead I lift `putStrLn "Hi!"` into a `ClSF` and then use `safe`
 to turn the signal function in to a `ClSFExcept`. 
 
@@ -475,7 +475,7 @@ main :: IO ()
 main = flow $ (fmap (const ()) . exceptS . runMSFExcept $ checkUseInput) @@ StdinClock
 ```
 
-We've changed our exception type from `Empty` to `()`, as well as our main. We no longe have
+We've changed our exception type from `Void` to `()`, as well as our main. We no longe have
 an all exceptions handled `ClSFExcept` function so we can't use `safely`. Instead we 
 use `runMSFExcept` to get a type `ClSF (ExceptT () IO) StdinClock () ()`. 
 Then `exceptS` to get a type `ClSF IO StdinClock () (Either () ())`. (We haven't talked
@@ -876,7 +876,7 @@ return the string.
 rhValidateString :: ClSF (ExceptT () IO) StdinClock () String
 rhValidateString = rhGetLine >>> rhValidate
 
-rhGetInput :: ClSFExcept IO StdinClock () String Empty
+rhGetInput :: ClSFExcept IO StdinClock () String Void
 rhGetInput = do
   try rhValidateString
   once_ exitSuccess
