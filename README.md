@@ -1500,4 +1500,66 @@ SDL treats events in a certain way. From what I know, there is a buffer that sto
 and we can poll an event from this buffer using `pollEvent :: MonadIO m => m (Maybe Event)` or
 we can get all the events in the buffer using `pollEvents :: MonadIO m => m [Event]`.
 We must unify this notion of events with rhine. We will make a clock that ticks when we get an
-event. It will be similar to how `StdinClock` works.
+event. It will be similar to how `StdinClock` works. 
+
+We won't actually use `pollEvent` or `pollEvents` because that wouldn't make sense. The clock
+shouldn't tick if there is no even (the case of `Nothing` or `[]`). Instead we will use
+`waitEvent :: MonadIO m => m Event`, which waits until there is an event. This is very much like
+`getLine`. 
+
+Our type will have kink `*` just like `StdinClock`, and will just have one value constructor.
+All the important stuff will happen in the `Clock` instance.
+
+Our `Time` will be `UTCTime` and our `Tag` will be `Event`. Our definition of `initClock` will
+be essentially the same as for `StdinClock`. Finally we'll have an instance in `Semigroup`.
+We will also need a instance in rhine's `GetClockProxy` typeclass, but rhine can generate it for
+us.
+
+```haskell
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
+
+module SDLClock where
+
+import Data.Time.Clock 
+import Data.Semigroup
+
+import FRP.Rhine
+
+import qualified SDL
+
+
+data SDLClock = SDLClock
+
+instance MonadIO m => Clock m SDLClock where
+  type Time SDLClock = UTCTime
+  type Tag  SDLClock = SDL.Event
+
+  initClock _ = do
+    initialTime <- liftIO getCurrentTime
+    return
+      ( constM $ liftIO $ do
+          event <- SDL.waitEvent
+          time  <- getCurrentTime
+          return (time, event)
+      , initialTime
+      )
+
+instance GetClockProxy SDLClock
+
+instance Semigroup SDLClock where
+  _ <> _ = SDLClock
+```
+
+The only difference between this an `StdinClock` is that instead of `line <- getLine`, we have
+`event <- SDL.waitEvent`. 
+
+If we look at the `Event` type we see it is a sum type of `eventTimestamp :: Timestamp` and 
+`eventPayload :: EventPayload`. We could adjust our definition so that we break down the polled
+event and have a `Time` of `Timestamp` and a `Tag` of `EventPayload`. The only issue is with this
+is getting the `initialTime`. `Timestamp` is a `Word32`, so we could potentially still get the 
+initial time with `getCurrctTime` and then convert it to a `Word32`. But what we have seems fine
+for now.
+
+Now to see if it works.
