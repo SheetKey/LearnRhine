@@ -1417,12 +1417,58 @@ We could use this to validate our user input with `StdinClock`.
 First we'll make a newtype to make things simpler.
 
 ```haskell
-type SelectString = SelectClock StdinClock Bool
+type SelectString = SelectClock StdinClock ()
 ```
 
-Since this is really just `StdinClock`, our tag is still `String`, and 
+`()` signifies the `tag`, which we don't care about. This clock will only tick when the
+input string is "q". We don't need to worry about getting the tag or processing the tag. If the
+clock ticks we know to close the program.
+
+```haskell
+quitProgram :: ClSF IO SelectQ () ()
+quitProgram = proc _ -> constMCl exitSuccess -< ()
+```
+
+Now that we have a `ClSF` to quit, we make it a `Rhine`. When we provide a clock we define 
+how the clock ticks. It would be nicer to do at the type level, but thats not a problem to tackle
+now. 
+
+```haskell
+quitRh :: Rhine IO SelectQ () ()
+quitRh = quitProgram @@ SelectClock StdinClock
+         (\str -> if str == "q"
+                  then Just ()
+                  else Nothing)
+```
+
+We construct `SelectQ` with the `SelectClock` data constructor, the `StdinClock` value 
+constructor, and the function that accepts the tag from `StdinClock`, and return a `Maybe ()`
+depending on if we have the right input. Now we can compose this with something. I'll
+use our `rhPrintMyLineRh` function from before. We need a schedule, and rhine provides two 
+very useful schedules for `SelectClock`s.
+
+```haskell
+schedSelectClocks :: (Monad m, Semigroup cl, Clock m cl) 
+                  => Schedule m (SelectClock cl a) (SelectClock cl b)
+```
+
+```haskell
+schedSelectClockAndMain :: (Monad m, Semigroup cl, Clock m cl) 
+                        => Schedule m cl (SelectClock cl a)
+```
+
+The first schedules two `SelectClock`s with the same main clock. The second, which we'll use,
+schedules the main clock with the select clock, which is a subclock. You can also use 
+the other schedules we have seen before.
+
+```haskell
+checkOrPrintRh :: Rhine IO (ParallelClock IO StdinClock SelectQ) () ()
+checkOrPrintRh = rhPrintMyLineRh ||@ schedSelectClockAndMain @|| quitRh 
+```
 
 
+
+	
 # Pt. 2: SDL2
 
 Now that we've learned a bit about how to use rhine, we're going to move on to the second part:
