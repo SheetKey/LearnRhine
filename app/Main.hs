@@ -279,23 +279,21 @@ rhPrintEveryNowAndThenRh = hoistClSFAndClock runScheduleIO rhPrintEveryNowAndThe
 --------------------------------------------------
 -- Select Clock
 --------------------------------------------------
-type SelectString = SelectClock StdinClock String 
+type SelectQ = SelectClock StdinClock Bool
 
-checkQ :: ClSF IO SelectString () String
+checkQ :: ClSF IO SelectQ () Bool
 checkQ = tagS
 
-quitProgram :: ClSF IO SelectString String ()
-quitProgram = proc _ -> constMCl exitSuccess -< ()
+quitProgram :: ClSF IO SelectQ Bool ()
+quitProgram = proc b -> if b
+                        then constMCl exitSuccess -< ()
+                        else returnA -< ()
 
-quitRh :: Rhine IO SelectString () ()
+quitRh :: Rhine IO SelectQ () ()
 quitRh = checkQ >-> quitProgram @@ SelectClock StdinClock
          (\str -> if str == "q"
-                  then Just "q"
+                  then Just True
                   else Nothing)
 
-checkOrPrintRh :: Rhine
-  IO
-  (ParallelClock IO StdinClock (SelectClock StdinClock String))
-  ()
-  ()
+checkOrPrintRh :: Rhine IO (ParallelClock IO StdinClock SelectQ) () ()
 checkOrPrintRh = rhPrintMyLineRh ||@ schedSelectClockAndMain @|| quitRh 
