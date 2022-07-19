@@ -1563,3 +1563,59 @@ initial time with `getCurrctTime` and then convert it to a `Word32`. But what we
 for now.
 
 Now to see if it works.
+
+We'll start with a `ClSF` thats just `tagS`.
+
+```haskell
+getEvent :: MonadIO m => ClSF m SDLClock () SDL.Event
+getEvent = tagS
+```
+
+Then we want to process the event. This is adjusted from the Haskell SDL getting started
+`appLoop` function.
+
+```haskell
+eventIsKey :: SDL.Keycode -> Maybe SDL.Event -> Bool
+eventIsKey code (Just event)
+  = case SDL.eventPayload event of
+      SDL.KeyboardEvent kEvent -> SDL.keyboardEventKeyMotion kEvent == SDL.Pressed
+                               && SDL.keysymKeycode (SDL.keyboardEventKeysym kEvent) == code
+      _ -> False
+eventIsKey _ Nothing = False
+
+eventIsQ :: Maybe SDL.Event -> Bool
+eventIsQ = eventIsKey SDL.KeycodeQ
+```
+
+We will want to check for other key inputs so I've made this two function to help with
+reusability. I've used `Maybe` since the `ResBuf` we'll use is `fifoBounded`.
+
+Then we want to use `eventIsQ` in a `ClSF`. I'll use the `Busy` clock since we want
+to process the input immediately whenever there is any.
+
+```haskell
+quitProgram :: MonadIO m => SDL.Window -> ClSF m Busy (Maybe SDL.Event) ()
+quitProgram win = arr eventIsQ >>> proc b -> if b
+                                                then arrMCl SDL.destroyWindow -< win
+                                                else returnA -< ()
+```
+
+Then we put the two `ClSF`s together in a `Rhine`.
+
+```haskell
+appLoop2 :: SDL.Window -> Rhine IO (SequentialClock IO SDLClock Busy) () ()
+appLoop2 win = getEvent @@ SDLClock
+               >-- fifoBounded 5 -@- concurrently
+               --> quitProgram win @@ Busy
+```
+
+Finally we make a main function and see what happens.
+
+```haskell
+main2 :: IO ()
+main2 = do
+  SDL.initializeAll
+  window <- SDL.createWindow "Test" SDL.defaultWindow
+  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+  flow $ appLoop2 window
+```

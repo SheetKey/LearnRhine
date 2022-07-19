@@ -53,6 +53,7 @@ quitProgram win = arr eventIsQ >>> proc b -> if b
                                                 then arrMCl SDL.destroyWindow -< win
                                                 else returnA -< ()
 
+appLoop2 :: SDL.Window -> Rhine IO (SequentialClock IO SDLClock Busy) () ()
 appLoop2 win = getEvent @@ SDLClock
                >-- fifoBounded 5 -@- concurrently
                --> quitProgram win @@ Busy
