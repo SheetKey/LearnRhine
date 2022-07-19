@@ -16,7 +16,7 @@ import qualified Data.Vector.Sized as V
 import qualified SDL
 
 main :: IO ()
-main = print 2
+main = main1
 
 {--------------------------------------------
 Basic SDL
@@ -26,5 +26,5 @@ main1 = do
   SDL.initializeAll
   window <- SDL.createWindow "Test" SDL.defaultWindow
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
-  threadDelay 5000
+  SDL.delay 5000
   SDL.destroyWindow window

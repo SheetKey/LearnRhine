@@ -1473,3 +1473,31 @@ checkOrPrintRh = rhPrintMyLineRh ||@ schedSelectClockAndMain @|| quitRh
 
 Now that we've learned a bit about how to use rhine, we're going to move on to the second part:
 integrating rhine with SDL2. 
+
+## Setting up
+
+This code will now be contained in the `game` folder. Its a new executable.
+
+We'll start with a basic program to make sure we have SDL set up properly.
+
+```haskell
+main1 :: IO ()
+main1 = do
+  SDL.initializeAll
+  window <- SDL.createWindow "Test" SDL.defaultWindow
+  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+  SDL.delay 5000
+  SDL.destroyWindow window
+```
+
+This creates a window and a renderer, delays for 5 seconds, then quits. 
+Following the Haskell SDL2 getting started guide, we want an `appLoop` to replace the delay.
+But unlike the guide, our loop will use rhine. 
+
+## Making our event clock
+
+SDL treats events in a certain way. From what I know, there is a buffer that stores events,
+and we can poll an event from this buffer using `pollEvent :: MonadIO m => m (Maybe Event)` or
+we can get all the events in the buffer using `pollEvents :: MonadIO m => m [Event]`.
+We must unify this notion of events with rhine. We will make a clock that ticks when we get an
+event. It will be similar to how `StdinClock` works.
