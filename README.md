@@ -1488,6 +1488,7 @@ main1 = do
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   SDL.delay 5000
   SDL.destroyWindow window
+  SDL.quit
 ```
 
 This creates a window and a renderer, delays for 5 seconds, then quits. 
@@ -1590,13 +1591,24 @@ eventIsQ = eventIsKey SDL.KeycodeQ
 We will want to check for other key inputs so I've made this two function to help with
 reusability. I've used `Maybe` since the `ResBuf` we'll use is `fifoBounded`.
 
+We'll want a function to close the program completely, not just the window. Since everything is
+happening within a `ClSF`, closing the window won't stop the `ClSF` clock from ticking.
+
+```haskell
+quitAll :: MonadIO m => SDL.Window -> m ()
+quitAll win = do
+  SDL.destroyWindow win
+  SDL.quit
+  liftIO exitSuccess
+```
+
 Then we want to use `eventIsQ` in a `ClSF`. I'll use the `Busy` clock since we want
 to process the input immediately whenever there is any.
 
 ```haskell
 quitProgram :: MonadIO m => SDL.Window -> ClSF m Busy (Maybe SDL.Event) ()
 quitProgram win = arr eventIsQ >>> proc b -> if b
-                                                then arrMCl SDL.destroyWindow -< win
+                                                then arrMCl quitAll -< win
                                                 else returnA -< ()
 ```
 

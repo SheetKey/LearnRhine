@@ -9,6 +9,7 @@ import FRP.Rhine.ClSF.Except
 
 import SDLClock
 
+import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
 import Control.Concurrent
 import Data.Void
@@ -18,7 +19,7 @@ import qualified Data.Vector.Sized as V
 import qualified SDL
 
 main :: IO ()
-main = main1
+main = main2
 
 {--------------------------------------------
 Basic SDL
@@ -30,6 +31,7 @@ main1 = do
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   SDL.delay 5000
   SDL.destroyWindow window
+  SDL.quit
 
 {--------------------------------------------
 Testing our clock
@@ -48,10 +50,16 @@ eventIsKey _ Nothing = False
 eventIsQ :: Maybe SDL.Event -> Bool
 eventIsQ = eventIsKey SDL.KeycodeQ
 
+quitAll :: MonadIO m => SDL.Window -> m ()
+quitAll win = do
+  SDL.destroyWindow win
+  SDL.quit
+  liftIO exitSuccess
+
 quitProgram :: MonadIO m => SDL.Window -> ClSF m Busy (Maybe SDL.Event) ()
 quitProgram win = arr eventIsQ >>> proc b -> if b
-                                                then arrMCl SDL.destroyWindow -< win
-                                                else returnA -< ()
+                                             then arrMCl quitAll -< win
+                                             else returnA -< ()
 
 appLoop2 :: SDL.Window -> Rhine IO (SequentialClock IO SDLClock Busy) () ()
 appLoop2 win = getEvent @@ SDLClock
