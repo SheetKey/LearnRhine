@@ -37,9 +37,15 @@
             cabal-install
             haskell-language-server
             haskellPackages.implicit-hie
+
             # Rhine
             haskellPackages.rhine
             haskellPackages.vector-sized
+
+            # SLD2
+            haskellPackages.sdl2
+            SDL2
+            pkg-config
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };

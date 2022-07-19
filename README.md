@@ -1414,3 +1414,16 @@ is complete.
 
 This is a way we can create a clock that ticks only for a specified tag of the main clock.
 We could use this to validate our user input with `StdinClock`. 
+First we'll make a newtype to make things simpler.
+
+```haskell
+type SelectString = SelectClock StdinClock Bool
+```
+
+Since this is really just `StdinClock`, our tag is still `String`, and 
+
+
+# Pt. 2: SDL2
+
+Now that we've learned a bit about how to use rhine, we're going to move on to the second part:
+integrating rhine with SDL2. 
