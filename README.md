@@ -1631,3 +1631,7 @@ main2 = do
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   flow $ appLoop2 window
 ```
+
+## A quit clock
+
+Now that we know our clock works, lets use a select clock to quit our program. 

@@ -72,3 +72,7 @@ main2 = do
   window <- SDL.createWindow "Test" SDL.defaultWindow
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   flow $ appLoop2 window
+
+{--------------------------------------------
+A simpler quit
+-}-------------------------------------------
