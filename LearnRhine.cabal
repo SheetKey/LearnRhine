@@ -28,6 +28,7 @@ executable Game
 
     other-modules:    SDLClock.SDLClock
                     , SDLClock.SDLQuitClock
+                    , SDLInit.SDLInit
 
     build-depends:    base ^>=4.15.1.0
                     , rhine

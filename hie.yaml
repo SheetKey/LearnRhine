@@ -9,6 +9,9 @@ cradle:
     - path: "game/SDLClock/SDLQuitClock.hs"
       component: "LearnRhine:exe:Game"
 
+    - path: "game/SDLInit/SDLInit.hs"
+      component: "LearnRhine:exe:Game"
+
     - path: "app/Main.hs"
       component: "LearnRhine:exe:Example"
 
