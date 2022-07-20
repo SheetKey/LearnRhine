@@ -26,7 +26,8 @@ extra-source-files:
 executable Game
     main-is:          Main.hs
 
-    other-modules:    SDLClock
+    other-modules:    SDLClock.SDLClock
+                    , SDLClock.SDLQuitClock
 
     build-depends:    base ^>=4.15.1.0
                     , rhine
