@@ -7,7 +7,8 @@ module Main where
 import FRP.Rhine
 import FRP.Rhine.ClSF.Except 
 
-import SDLClock
+import SDLClock.SDLClock
+import SDLClock.SDLQuitClock
 
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
@@ -19,7 +20,7 @@ import qualified Data.Vector.Sized as V
 import qualified SDL
 
 main :: IO ()
-main = main2
+main = main3
 
 {--------------------------------------------
 Basic SDL
@@ -76,3 +77,9 @@ main2 = do
 {--------------------------------------------
 A simpler quit
 -}-------------------------------------------
+main3 :: IO ()
+main3 = do
+  SDL.initializeAll
+  window <- SDL.createWindow "Test" SDL.defaultWindow
+  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+  flow $ sdlQuitAllRh SDL.KeycodeQ window

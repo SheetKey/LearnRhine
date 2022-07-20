@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module SDLClock where
+module SDLClock.SDLClock where
 
 import Data.Time.Clock 
 import Data.Semigroup

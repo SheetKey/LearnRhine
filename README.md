@@ -1635,3 +1635,11 @@ main2 = do
 ## A quit clock
 
 Now that we know our clock works, lets use a select clock to quit our program. 
+This code is fairly straight forward since very little has changed from the original section
+introducing `SelectClock`. The code is contained in "game/SDLClock/SDLQuitClock".
+
+For the select clock function that determins when the clock ticks I have used an adjusted version
+of the case statement from `eventIsKey`. I have added the case that the `eventPayload` is 
+and `SDL.QuitEvent`. If you try to close the window via your window manager without this case,
+nothing will happen. Adding this case will determine the behavior of the program when closed 
+externally, such as with a window manger command, in my case "Mod+Shift+c".
