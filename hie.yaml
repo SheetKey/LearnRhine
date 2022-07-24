@@ -12,6 +12,15 @@ cradle:
     - path: "game/SDLInit/SDLInit.hs"
       component: "LearnRhine:exe:Game"
 
+    - path: "game/SDLRenderable/SDLRenderable.hs"
+      component: "LearnRhine:exe:Game"
+
+    - path: "game/SDLRenderable/SDLMovable.hs"
+      component: "LearnRhine:exe:Game"
+
+    - path: "game/SDLRenderable/Type.hs"
+      component: "LearnRhine:exe:Game"
+
     - path: "app/Main.hs"
       component: "LearnRhine:exe:Example"
 
