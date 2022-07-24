@@ -9,6 +9,8 @@ import FRP.Rhine.ClSF.Except
 
 import SDLClock.SDLClock
 import SDLClock.SDLQuitClock
+import SDLInit.SDLInit
+import SDLRenderable.SDLRenderable
 
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
@@ -20,7 +22,7 @@ import qualified Data.Vector.Sized as V
 import qualified SDL
 
 main :: IO ()
-main = main3
+main = main4
 
 {--------------------------------------------
 Basic SDL
@@ -83,3 +85,34 @@ main3 = do
   window <- SDL.createWindow "Test" SDL.defaultWindow
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   flow $ sdlQuitAllRh SDL.KeycodeQ window
+
+{--------------------------------------------
+Background
+-}-------------------------------------------
+setBackground :: SDL.Renderer -> IO ()
+setBackground ren = do
+  SDL.clear ren
+  SDL.rendererDrawColor ren SDL.$= SDL.V4 24 164 255 1
+  SDL.fillRect ren Nothing
+  SDL.present ren
+
+setBackgroundOnce :: SDL.Renderer -> ClSF (ExceptT () IO) cl () ()
+setBackgroundOnce ren = proc _ -> do
+  (runClSFExcept $ safe $ arrMCl setBackground) -< ren
+  throwS -< ()
+
+setBackgroundOnceSafe :: SDL.Renderer -> ClSF IO cl () ()
+setBackgroundOnceSafe ren = safely $ do
+  try $ setBackgroundOnce ren
+  try $ runClSFExcept $ safe $ constMCl $ return ()
+
+setBRh :: SDL.Renderer -> Rhine IO Busy () ()
+setBRh ren = setBackgroundOnceSafe ren @@ Busy
+
+loop4 win ren = setBRh ren ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+
+main4 = sdlInitAndFlow loop4
+
+{--------------------------------------------
+A moving object
+-}-------------------------------------------
