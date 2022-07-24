@@ -1643,3 +1643,126 @@ of the case statement from `eventIsKey`. I have added the case that the `eventPa
 and `SDL.QuitEvent`. If you try to close the window via your window manager without this case,
 nothing will happen. Adding this case will determine the behavior of the program when closed 
 externally, such as with a window manger command, in my case "Mod+Shift+c".
+
+## Drawing
+
+Now that we can close our window, lets draw something on it. For now we'll just set a background.
+
+So that we don't have to keep writing the same main function over and over we'll make a little
+helper. 
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleContexts #-}
+
+module SDLInit.SDLInit where
+
+import FRP.Rhine
+import qualified SDL
+
+sdlInitAndFlow :: (Clock IO cl, GetClockProxy cl, Time cl ~ Time (In cl), Time cl ~ Time (Out cl))
+               => (SDL.Window -> SDL.Renderer -> Rhine IO cl () ()) -> IO ()
+sdlInitAndFlow rhine = do
+  SDL.initializeAll
+  window <- SDL.createWindow "Test" SDL.defaultWindow
+  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+  flow $ rhine window renderer
+```
+
+GADTs must be enabled for the time constrains to be allowed as they are. 
+FlexibleContexts must be enable since the type contraints contain the concrete type `IO`.
+Most rhine functions don't require the `GetClockProxy cl` type constraint but I got errors
+that the instance could not be infered so I had to add it.
+
+The function expects a function that takes both a window and renderer and returns a `Rhine`.
+The window will likely only be used by our quiting function, but the renderer will be used in
+many places. We may eventually want to set the renderer state before starting our rhine loop,
+but for now we will do everything except initiallization within a rhine.
+
+Since SDL is imperative, the Haskell SDL api uses monadic programming. Our programming loop will
+often be (1) write some SDL stuff within `IO` (2) lift this function into a `ClSF` using `arrMCl`.
+
+SDL is very stateful, and the SDL api uses Data.StateVar to provide us a nicer interface.
+We have three functions, two of which have strict varients, that will let us interact with SDL
+states. 
+
+```haskell
+get :: (HasGetter t a, MonadIO m) => t -> m a
+
+($=) :: (HasSetter t a, MonadIO m) => t -> a -> m ()
+
+($~) :: (HasUpdate t a b, MonadIO m) => t -> (a -> b) -> m (
+```
+
+(The strict versions are `$=!` and `$~!`.) 
+In the type signitures `t` is the stateful thing. `get` gets the value,
+`$=` sets the value, and `$~` changes the value via a function.
+
+```haskell
+setBackground :: SDL.Renderer -> IO ()
+setBackground ren = do
+  SDL.clear ren
+  SDL.rendererDrawColor ren SDL.$= SDL.V4 24 164 255 1
+  SDL.fillRect ren Nothing
+  SDL.present ren
+```
+
+Our function takes a renderer, which is a stateful thing uses to draw stuff to the window.
+Following the SDL guidance, we first clear the renderer. The renderer has a buffer which saves up
+things to draw, but it only actually draws then `present` is called. It is advised to use `clear`
+to both initialize the buffer and empty it. 
+
+Then we call `rendererDrawColor`. This takes our renderer as argument and produces a
+`StateVar (V4 Word8)`. This is a state with a vector holding rgba value. We must set
+this value to the color we want using `$=`.
+
+Then we call `fillRect`. This accepts our renderer and a `Maybe (Rectangle CInt)`. This is 
+the rectangle we want to fill. If we say `Nothing`, it means the entire rectangel.
+(SDL often uses `NULL`, and the Haskell api will often use `Nothing` in its place.)
+
+Finally we call `present` which updates the window.
+
+No we lift. We only want to call this function once, so we will use `ExceptT` for control flow.
+
+```haskell
+setBackgroundOnce :: SDL.Renderer -> ClSF (ExceptT () IO) cl () ()
+setBackgroundOnce ren = proc _ -> do
+  (runClSFExcept $ safe $ arrMCl setBackground) -< ren
+  throwS -< ()
+```
+
+We lift `setBackground`, then have to use `safe` and `runClSFExcept` (refer to section on 
+control flow if not sure why), then provide the renderer as an argument.
+
+Immediately after this we throw an exception.
+Now we need a `ClSFExcept` to deal with this.
+
+```haskell
+setBackgroundOnceSafe :: SDL.Renderer -> ClSF IO cl () ()
+setBackgroundOnceSafe ren = safely $ do
+  try $ setBackgroundOnce ren
+  try $ runClSFExcept $ safe $ constMCl $ return ()
+``` 
+
+We try our function, which will through an exception. We don't have anything else to do at this
+point so we'll just spit out `()` forever. To do this we have to `return ()` to get an `IO ()`.
+Then we lift into a `ClSF` with `constMCl`, and the rest should be clear. We can use safely
+since we use `safe`. The second try will never throw an exception.
+
+We'll use `Busy` since we want this to happen immediately.
+
+```haskell
+setBRh :: SDL.Renderer -> Rhine IO Busy () ()
+setBRh ren = setBackgroundOnceSafe ren @@ Busy
+```
+
+Then we'll compose this with our quit function and call it with our init function.
+
+```haskell
+loop4 win ren = setBRh ren ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+
+main4 = sdlInitAndFlow loop4
+```
+
+Now we have a blue window that we can quit. How wonderful!
