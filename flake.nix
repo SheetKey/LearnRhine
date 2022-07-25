@@ -13,7 +13,7 @@
 
         haskellPackages = pkgs.haskellPackages;
 
-        packageName = "LearnRhine";
+        packageName = "rhine-sdl";
 
         jailbreakUnbreak = pkg:
           pkgs.haskell.lib.doJailbreak (pkg.overrideAttrs (_: { meta = { }; }));
