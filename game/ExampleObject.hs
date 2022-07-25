@@ -1,7 +1,7 @@
 module ExampleObject where
 
 import FRP.Rhine
-import FRP.Rhine.SDL
+--import FRP.Rhine.SDL
 import qualified SDL
 import qualified SDL.Image as SDLI
 

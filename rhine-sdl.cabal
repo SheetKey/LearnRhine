@@ -29,9 +29,9 @@ library
     exposed-modules:  FRP.Rhine.SDL.Init
                     , FRP.Rhine.SDL.Clock.SDLClock
                     , FRP.Rhine.SDL.Clock.SDLQuitClock
-                    , FRP.Rhine.SDL.Renderer.Movable
-                    , FRP.Rhine.SDL.Renderer.Renderable
                     , FRP.Rhine.SDL.Renderer.Type
+                    , FRP.Rhine.SDL.Renderer.Renderable
+                    , FRP.Rhine.SDL.Renderer.Movable
     
     build-depends:    base ^>=4.15.1.0
                     , rhine

@@ -1,31 +1,16 @@
 cradle:
   cabal:
     - path: "src"
-      component: "LearnRhine:lib:rhine-sdl"
+      component: "lib:rhine-sdl"
 
     - path: "game/Main.hs"
-      component: "LearnRhine:exe:Game"
+      component: "rhine-sdl:exe:Game"
 
-    - path: "game/SDLClock/SDLClock.hs"
-      component: "LearnRhine:exe:Game"
-
-    - path: "game/SDLClock/SDLQuitClock.hs"
-      component: "LearnRhine:exe:Game"
-
-    - path: "game/SDLInit/SDLInit.hs"
-      component: "LearnRhine:exe:Game"
-
-    - path: "game/SDLRenderable/SDLRenderable.hs"
-      component: "LearnRhine:exe:Game"
-
-    - path: "game/SDLRenderable/SDLMovable.hs"
-      component: "LearnRhine:exe:Game"
-
-    - path: "game/SDLRenderable/Type.hs"
-      component: "LearnRhine:exe:Game"
+    - path: "game/ExampleObject.hs"
+      component: "rhine-sdl:exe:Game"
 
     - path: "app/Main.hs"
-      component: "LearnRhine:exe:Example"
+      component: "rhine-sdl:exe:Example"
 
     - path: "app/Example1.hs"
-      component: "LearnRhine:exe:Example"
+      component: "rhine-sdl:exe:Example"
