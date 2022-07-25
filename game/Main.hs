@@ -91,8 +91,8 @@ Background
 -}-------------------------------------------
 setBackground :: SDL.Renderer -> IO ()
 setBackground ren = do
-  SDL.clear ren
   SDL.rendererDrawColor ren SDL.$= SDL.V4 24 164 255 1
+  SDL.clear ren
   SDL.fillRect ren Nothing
   SDL.present ren
 

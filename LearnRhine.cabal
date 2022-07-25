@@ -22,6 +22,25 @@ maintainer:         wveatchw@gmail.com
 extra-source-files:
     CHANGELOG.md
     README.org
+    sprites/**/*.png
+
+library rhine-sdl
+    hs-source-dirs:   src
+    exposed-modules:  FRP.Rhine.SDL.Init
+                    , FRP.Rhine.SDL.Clock.SDLClock
+                    , FRP.Rhine.SDL.Clock.SDLQuitClock
+                    , FRP.Rhine.SDL.Renderer.Movable
+                    , FRP.Rhine.SDL.Renderer.Renderable
+                    , FRP.Rhine.SDL.Renderer.Type
+    
+    build-depends:    base ^>=4.15.1.0
+                    , rhine
+                    , vector-sized
+                    , sdl2
+                    , sdl2-image
+                    , time
+    default-language: Haskell2010
+
 
 executable Game
     main-is:          Main.hs
@@ -37,6 +56,7 @@ executable Game
                     , rhine
                     , vector-sized
                     , sdl2
+                    , sdl2-image
                     , time
     hs-source-dirs:   game
     default-language: Haskell2010

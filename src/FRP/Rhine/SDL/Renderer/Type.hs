@@ -1,4 +1,4 @@
-module SDLRenderable.Type where
+module FRP.Rhine.SDL.Renderer.Type where
 
 import qualified SDL
 import Foreign.C.Types

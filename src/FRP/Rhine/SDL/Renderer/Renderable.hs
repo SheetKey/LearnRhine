@@ -1,4 +1,4 @@
-module SDLRenderable.SDLRenderable where
+module FRP.Rhine.SDL.Renderer.Renderable where
 
 import FRP.Rhine
 
