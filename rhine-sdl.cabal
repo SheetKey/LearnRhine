@@ -1,5 +1,5 @@
 cabal-version:      2.4
-name:               LearnRhine
+name:               rhine-sdl
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
@@ -24,7 +24,7 @@ extra-source-files:
     README.org
     sprites/**/*.png
 
-library rhine-sdl
+library 
     hs-source-dirs:   src
     exposed-modules:  FRP.Rhine.SDL.Init
                     , FRP.Rhine.SDL.Clock.SDLClock
@@ -45,14 +45,10 @@ library rhine-sdl
 executable Game
     main-is:          Main.hs
 
-    other-modules:    SDLClock.SDLClock
-                    , SDLClock.SDLQuitClock
-                    , SDLInit.SDLInit
-                    , SDLRenderable.SDLRenderable
-                    , SDLRenderable.SDLMovable
-                    , SDLRenderable.Type
+    other-modules:    ExampleObject
 
     build-depends:    base ^>=4.15.1.0
+                    , rhine-sdl
                     , rhine
                     , vector-sized
                     , sdl2
