@@ -7,10 +7,7 @@ module Main where
 import FRP.Rhine
 import FRP.Rhine.ClSF.Except 
 
-import SDLClock.SDLClock
-import SDLClock.SDLQuitClock
-import SDLInit.SDLInit
-import SDLRenderable.SDLRenderable
+import FRP.Rhine.SDL
 
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule

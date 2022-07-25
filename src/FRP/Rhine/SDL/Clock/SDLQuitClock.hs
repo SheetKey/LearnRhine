@@ -5,10 +5,11 @@ module FRP.Rhine.SDL.Clock.SDLQuitClock
   ) where
 
 import FRP.Rhine
+import FRP.Rhine.SDL.Clock.SDLClock
+
 import qualified SDL
 import System.Exit (exitSuccess)
 
-import SDLClock.SDLClock
 
 type SDLQuitClock = SelectClock SDLClock ()
 
