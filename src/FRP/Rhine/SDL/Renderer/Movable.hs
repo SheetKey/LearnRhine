@@ -6,7 +6,6 @@ import FRP.Rhine.SDL.Renderer.Renderable
 
 import qualified SDL
 
-
+-- | A type class for all renderable types that can move on the screen.
 class Renderable a => Movable a where
-  move :: MonadIO m => a -> m ()
-  moveClSF :: MonadIO m => a -> ClSF m cl Vel ()
+  moveClSF :: MonadIO m => a -> ClSF m cl Vel Point

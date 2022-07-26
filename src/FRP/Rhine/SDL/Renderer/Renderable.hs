@@ -7,10 +7,7 @@ import qualified SDL
 
 import Foreign.C.Types
 
-
+-- | A type class for all types that can be rendered to the screen.
+-- It is expected that 'a' has a texture or a means of getting a texture.
 class Renderable a where
-  getTexture :: MonadIO m => a -> SDL.Renderer -> m SDL.Texture
-  --getTexturClSF :: MonadIO m => a -> ClSF m cl () SDL.Texture
-
-  --render :: MonadIO m => a -> SDL.Renderer -> m ()
   renderClSF :: MonadIO m => a -> SDL.Renderer -> ClSF m cl Point ()
