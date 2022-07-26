@@ -13,18 +13,23 @@ import FRP.Rhine.SDL.Clock.SDLQuitClock
 import FRP.Rhine.SDL.Renderer.Renderable
 import FRP.Rhine.SDL.Renderer.Movable
 import FRP.Rhine.SDL.Renderer.Type
+import FRP.Rhine.SDL.Renderer.Render
+import FRP.Rhine.SDL.Background
 
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
 import Control.Concurrent
 import Data.Void
+import Data.Word
 
 import qualified Data.Vector.Sized as V
 
 import qualified SDL
 
+import System.Random
+
 main :: IO ()
-main = main4
+main = main5
 
 {--------------------------------------------
 Basic SDL
