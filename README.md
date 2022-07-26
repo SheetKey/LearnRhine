@@ -1540,10 +1540,13 @@ instance MonadIO m => Clock m SDLClock where
   initClock _ = do
     initialTime <- liftIO getCurrentTime
     return
-      ( constM $ liftIO $ do
-          event <- SDL.waitEvent
-          time  <- getCurrentTime
-          return (time, event)
+      ( filterS $ constM $ liftIO $ do
+          mevent <- SDL.pollEvent
+          case mevent of
+            Just event -> do
+              time  <- getCurrentTime
+              return $ Just (time, event)
+            Nothing -> return Nothing
       , initialTime
       )
 
@@ -1553,8 +1556,29 @@ instance Semigroup SDLClock where
   _ <> _ = SDLClock
 ```
 
-The only difference between this an `StdinClock` is that instead of `line <- getLine`, we have
-`event <- SDL.waitEvent`. 
+There's a few differences between our `initClock` and the `StdinClock` `initClock`.
+Instead of `getLine`, we need to get an SDL event. SDL provides several methods for doing so,
+mainly `pollEvent :: MonadIO m => m (Maybe Event)`, `pollEvents :: MonadIO m => m [Event]`,
+and `waitEvent :: MonadIO m => m Event`.
+
+The type signature for `waitEvent` resembles that of `getLine`. My first attempt used `waitEvent`
+instead of `getLine` and was otherwise identical to `StdinClock`'s `initClock`. The problem is
+that unlike `getLine`, `waitClock` stops anything from happening until there is an event.
+With `getLine`, we can combine `StdinClock` in parallel with other clocks 
+`(rh1 ||@ concurrently @|| rh2`) and the non-`StdinClock` clock ticks away as it should. But with
+`waitEvent`, the other clock, such as a `Millisecond n` clock, can only tick when an event is
+polled. The millisecond clock won't wick every n milliseconds, only once every time that this
+SDL clock ticks. So we can't use `waitEvent`.
+
+`pollEvent` seems like the next best choice, and is what we'll use. The problem is this gives us
+a maybe. We don't want our SDL clock ticking constantly with `Nothing` as the tag. Anytime we
+used `tagS` we'd have to handle the `Nothing` case. This would slow things down and be quite
+annoying. Fortunately we have `filterS :: Monad m => MSD m () (Maybe b) -> MSF m () b`.
+Recall that `initClock` is a tuple where the first element is a `RunningClockInit`, 
+which is just a type synonym for a `RunningClock` inside a monad. Also recall that
+a `RunningClock` is an `MSF`. So using `pollEvent`, we can make our `MSF` `RunningClock` output
+a maybe, and then just use `filterS`. Not so bad at all. And the good news is this implementation
+behvaes just like `StdinClock`.
 
 If we look at the `Event` type we see it is a sum type of `eventTimestamp :: Timestamp` and 
 `eventPayload :: EventPayload`. We could adjust our definition so that we break down the polled
@@ -1766,4 +1790,5 @@ main4 = sdlInitAndFlow loop4
 ```
 
 Now we have a blue window that we can quit. How wonderful!
+
 ## Planning our library
