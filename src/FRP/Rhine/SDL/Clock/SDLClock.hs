@@ -21,10 +21,13 @@ instance MonadIO m => Clock m SDLClock where
   initClock _ = do
     initialTime <- liftIO getCurrentTime
     return
-      ( constM $ liftIO $ do
-          event <- SDL.waitEvent
-          time  <- getCurrentTime
-          return (time, event)
+      ( filterS $ constM $ liftIO $ do
+          mevent <- SDL.pollEvent
+          case mevent of
+            Just event -> do
+              time  <- getCurrentTime
+              return $ Just (time, event)
+            Nothing -> return Nothing
       , initialTime
       )
 
