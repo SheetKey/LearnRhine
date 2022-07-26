@@ -47,6 +47,9 @@
             haskellPackages.sdl2-image
             SDL2
             pkg-config
+
+            # Random
+            haskellPackages.random
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };
