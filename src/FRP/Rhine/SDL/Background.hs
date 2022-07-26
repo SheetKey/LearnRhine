@@ -7,9 +7,11 @@ import FRP.Rhine.SDL.Renderer.Renderable
 import qualified SDL
 
 -- | The background is a texture. 
-type Background = SDL.Texture
+newtype Background = Background (IO SDL.Texture)
 
 instance Renderable Background where
-  renderClSF bg ren = proc _ -> do
-    constMCl (SDL.copy ren bg Nothing Nothing) -< ()
+  renderClSF (Background bgm) ren = constMCl $ liftIO
+                                    (do
+                                        bg <- bgm
+                                        SDL.copy ren bg Nothing Nothing)
             
