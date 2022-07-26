@@ -1,6 +1,9 @@
+{-# LANGUAGE DataKinds #-}
+
 module FRP.Rhine.SDL.Renderer.Render
   ( render
-  )where
+  , FPS60
+  ) where
 
 import FRP.Rhine
 
@@ -16,6 +19,6 @@ type FPS60 = Millisecond 17
 render :: MonadIO m => SDL.Renderer -> ClSF m FPS60 () ()
 render ren = arrMCl $
   \_ -> do
-    present ren
-    rendererDrawColor ren $= SDL.V4 0 0 0 0
-    clear ren
+    SDL.present ren
+    SDL.rendererDrawColor ren SDL.$= SDL.V4 0 0 0 0
+    SDL.clear ren
