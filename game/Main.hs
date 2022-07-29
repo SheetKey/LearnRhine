@@ -135,13 +135,13 @@ testBackground ren = do
   SDL.rendererRenderTarget ren SDL.$= Nothing
   return tex
 
-renderBackground :: SDL.Renderer -> ClSF IO cl Point ()
-renderBackground ren = proc pnt -> do
-  renderClSF (Background $ testBackground ren) ren -< pnt
-
 updateStuff :: SDL.Renderer -> ClSF IO FPS60 () ()
-updateStuff ren = constMCl (return (SDL.P (SDL.V2 0 0))) >>> renderBackground ren >>> render ren
+updateStuff ren = constMCl (return Nothing)
+                  >>> renderClSF (Background (testBackground ren)) ren
+                  >>> render ren
 
 loop5 win ren = updateStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
 
 main5 = sdlInitAndFlow loop5
+
+
