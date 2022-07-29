@@ -10,8 +10,4 @@ import qualified SDL
 newtype Background = Background (IO SDL.Texture)
 
 instance Renderable Background where
-  renderClSF (Background bgm) ren = constMCl $ liftIO
-                                    (do
-                                        bg <- bgm
-                                        SDL.copy ren bg Nothing Nothing)
-            
+  getTexture (Background tex) = liftIO tex
