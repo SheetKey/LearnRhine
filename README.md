@@ -1792,3 +1792,4 @@ main4 = sdlInitAndFlow loop4
 Now we have a blue window that we can quit. How wonderful!
 
 ## Planning our library
+
