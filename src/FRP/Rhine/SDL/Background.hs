@@ -1,8 +1,8 @@
 module FRP.Rhine.SDL.Background where
 
 import FRP.Rhine
-import FRP.Rhine.SDL.Renderer.Type
-import FRP.Rhine.SDL.Renderer.Renderable
+import FRP.Rhine.SDL.Components
+import FRP.Rhine.SDL.Renderer
 
 import qualified SDL
 

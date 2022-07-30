@@ -10,11 +10,11 @@ import FRP.Rhine.ClSF.Except
 import FRP.Rhine.SDL.Init
 import FRP.Rhine.SDL.Clock.SDLClock
 import FRP.Rhine.SDL.Clock.SDLQuitClock
-import FRP.Rhine.SDL.Renderer.Renderable
-import FRP.Rhine.SDL.Renderer.Movable
-import FRP.Rhine.SDL.Renderer.Type
-import FRP.Rhine.SDL.Renderer.Render
+import FRP.Rhine.SDL.Renderer
 import FRP.Rhine.SDL.Background
+import FRP.Rhine.SDL.Entity
+import FRP.Rhine.SDL.Components
+ 
 
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
@@ -25,11 +25,14 @@ import Data.Word
 import qualified Data.Vector.Sized as V
 
 import qualified SDL
+import qualified SDL.Image as SDLI
+
+import Foreign.C.Types
 
 import System.Random
 
 main :: IO ()
-main = main5
+main = main6
 
 {--------------------------------------------
 Basic SDL
@@ -144,4 +147,19 @@ loop5 win ren = updateStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh S
 
 main5 = sdlInitAndFlow loop5
 
+{--------------------------------------------
+A player
+-}-------------------------------------------
+mkplayer :: MonadIO m => SDL.Renderer -> ClSF m cl () [Entity] 
+mkplayer ren = constMCl $ liftIO $ do
+  xpos <- randomRIO (0 :: CInt, 500)
+  ypos <- randomRIO (0 :: CInt, 500)
+  return [Entity
+           (Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png")
+           (Just $ SDL.Rectangle (SDL.P (SDL.V2 xpos ypos)) (SDL.V2 64 64))]
 
+drawStuff ren = mkplayer ren >>> draw ren >>> render ren
+
+loop6 win ren = drawStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+
+main6 = sdlInitAndFlow loop6

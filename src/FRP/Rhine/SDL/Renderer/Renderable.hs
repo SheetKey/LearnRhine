@@ -3,7 +3,7 @@
 module FRP.Rhine.SDL.Renderer.Renderable where
 
 import FRP.Rhine
-import FRP.Rhine.SDL.Renderer.Type
+import FRP.Rhine.SDL.Components
 
 import qualified SDL
 
