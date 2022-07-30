@@ -7,13 +7,7 @@ module Main where
 import FRP.Rhine
 import FRP.Rhine.ClSF.Except 
 
-import FRP.Rhine.SDL.Init
-import FRP.Rhine.SDL.Clock.SDLClock
-import FRP.Rhine.SDL.Clock.SDLQuitClock
-import FRP.Rhine.SDL.Renderer
-import FRP.Rhine.SDL.Background
-import FRP.Rhine.SDL.Entity
-import FRP.Rhine.SDL.Components
+import FRP.Rhine.SDL
  
 
 import System.Exit (exitSuccess, exitFailure)
@@ -126,26 +120,26 @@ main4 = sdlInitAndFlow loop4
 {--------------------------------------------
 A better background
 -}-------------------------------------------
-testBackground :: SDL.Renderer -> IO SDL.Texture
-testBackground ren = do
-  tex <- SDL.createTexture ren SDL.RGBA8888 SDL.TextureAccessTarget (SDL.V2 800 600)
-  SDL.rendererRenderTarget ren SDL.$= Just tex
-  r <- randomRIO (0 :: Word8,255)
-  g <- randomRIO (0 :: Word8,255)
-  b <- randomRIO (0 :: Word8,255)
-  SDL.rendererDrawColor ren SDL.$= SDL.V4 r g b 1
-  SDL.clear ren
-  SDL.rendererRenderTarget ren SDL.$= Nothing
-  return tex
-
-updateStuff :: SDL.Renderer -> ClSF IO FPS60 () ()
-updateStuff ren = constMCl (return Nothing)
-                  >>> renderClSF (Background (testBackground ren)) ren
-                  >>> render ren
-
-loop5 win ren = updateStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
-
-main5 = sdlInitAndFlow loop5
+--testBackground :: SDL.Renderer -> IO SDL.Texture
+--testBackground ren = do
+--  tex <- SDL.createTexture ren SDL.RGBA8888 SDL.TextureAccessTarget (SDL.V2 800 600)
+--  SDL.rendererRenderTarget ren SDL.$= Just tex
+--  r <- randomRIO (0 :: Word8,255)
+--  g <- randomRIO (0 :: Word8,255)
+--  b <- randomRIO (0 :: Word8,255)
+--  SDL.rendererDrawColor ren SDL.$= SDL.V4 r g b 1
+--  SDL.clear ren
+--  SDL.rendererRenderTarget ren SDL.$= Nothing
+--  return tex
+--
+--updateStuff :: SDL.Renderer -> ClSF IO FPS60 () ()
+--updateStuff ren = constMCl (return Nothing)
+--                  >>> renderClSF (Background (testBackground ren)) ren
+--                  >>> render ren
+--
+--loop5 win ren = updateStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+--
+--main5 = sdlInitAndFlow loop5
 
 {--------------------------------------------
 A player
@@ -154,9 +148,9 @@ mkplayer :: MonadIO m => SDL.Renderer -> ClSF m cl () [Entity]
 mkplayer ren = constMCl $ liftIO $ do
   xpos <- randomRIO (0 :: CInt, 500)
   ypos <- randomRIO (0 :: CInt, 500)
-  return [Entity
-           (Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png")
-           (Just $ SDL.Rectangle (SDL.P (SDL.V2 xpos ypos)) (SDL.V2 64 64))]
+  let e1 = mapTexture defaultEntity $ const (Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png")
+      e2 = mapPosition e1 $ const (Just $ SDL.Rectangle (SDL.P (SDL.V2 xpos ypos)) (SDL.V2 64 64))
+  return [ e2 ]
 
 drawStuff ren = mkplayer ren >>> draw ren >>> render ren
 
