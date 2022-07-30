@@ -27,13 +27,17 @@ extra-source-files:
 library 
     hs-source-dirs:   src
     exposed-modules:  FRP.Rhine.SDL.Init
+                    , FRP.Rhine.SDL.Entity
                     , FRP.Rhine.SDL.Background
+
                     , FRP.Rhine.SDL.Clock.SDLClock
                     , FRP.Rhine.SDL.Clock.SDLQuitClock
-                    , FRP.Rhine.SDL.Renderer.Type
+                    
+                    , FRP.Rhine.SDL.Renderer
                     , FRP.Rhine.SDL.Renderer.Render
                     , FRP.Rhine.SDL.Renderer.Renderable
                     , FRP.Rhine.SDL.Renderer.Movable
+
     
     build-depends:    base ^>=4.15.1.0
                     , rhine
@@ -41,6 +45,7 @@ library
                     , sdl2
                     , sdl2-image
                     , time
+                    , random
     default-language: Haskell2010
 
 
