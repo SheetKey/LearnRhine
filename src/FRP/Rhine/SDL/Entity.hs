@@ -19,17 +19,31 @@ import qualified SDL.Image as SDLI
 
 
 data Entity = Entity
-  { getTexture :: Maybe (IO SDL.Texture)
+  { isActive :: Bool
+  , getTexture :: Maybe (IO SDL.Texture)
   , getPosition :: Maybe Position
   }
 
 defaultEntity :: Entity
 defaultEntity = Entity
+                True
                 Nothing
                 Nothing
+
+mapIsActive :: Entity -> (Bool -> Bool) -> Entity
+mapIsActive (Entity {..}) f = Entity (f isActive) getTexture getPosition
+
+setIsActive :: Entity -> Bool -> Entity
+setIsActive (Entity {..}) b = Entity b getTexture getPosition
                 
 mapTexture :: Entity -> (Maybe (IO SDL.Texture) -> Maybe (IO SDL.Texture)) -> Entity
-mapTexture (Entity {..}) f = Entity (f getTexture) getPosition
+mapTexture (Entity {..}) f = Entity isActive (f getTexture) getPosition
+
+setTexture :: Entity -> Maybe (IO SDL.Texture) -> Entity
+setTexture (Entity {..}) tex = Entity isActive tex getPosition
 
 mapPosition :: Entity -> (Maybe Position -> Maybe Position) -> Entity
-mapPosition (Entity {..}) f = Entity getTexture (f getPosition)
+mapPosition (Entity {..}) f = Entity isActive getTexture (f getPosition)
+
+setPosition :: Entity -> Maybe Position -> Entity
+setPosition (Entity {..}) pos = Entity isActive getTexture pos
