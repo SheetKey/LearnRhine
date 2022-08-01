@@ -1,4 +1,4 @@
-module FRP.Rhine.SDL.Renderer.Draw
+module FRP.Rhine.SDL.Process.Draw
   ( draw
   ) where
 

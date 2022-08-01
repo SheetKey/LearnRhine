@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 
-module FRP.Rhine.SDL.Renderer.Render
+module FRP.Rhine.SDL.Process.Render
   ( render
   , FPS60
   ) where
