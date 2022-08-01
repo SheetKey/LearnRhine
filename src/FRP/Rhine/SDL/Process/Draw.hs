@@ -5,6 +5,7 @@ module FRP.Rhine.SDL.Process.Draw
 import FRP.Rhine
 
 import FRP.Rhine.SDL.Entity
+import FRP.Rhine.SDL.Components
 
 import qualified SDL
 
@@ -15,7 +16,7 @@ drawHelper ren lst = case lst of
                        x:xs -> case getTexture x of
                                  Just mtex -> liftIO $ do
                                    tex <- mtex
-                                   SDL.copy ren tex Nothing (getPosition x)
+                                   SDL.copy ren tex Nothing (fmap mkRectangle $ getPosition x)
                                    drawHelper ren xs
                                  Nothing -> liftIO $ return ()
 
