@@ -4,6 +4,7 @@ module FRP.Rhine.SDL.Process.Active
   ( removeInactive
   ) where
 
+import FRP.Rhine
 import FRP.Rhine.SDL.Entity
 
 checkActive :: [Entity] -> [Entity]
