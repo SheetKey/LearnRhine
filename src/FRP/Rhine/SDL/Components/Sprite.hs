@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FRP.Rhine.SDL.Components.Sprite
-  (
+  ( Sprite (..)
+  , spriteRect
   ) where
 
 import qualified SDL
@@ -21,6 +22,6 @@ data Sprite = Sprite
 spriteRect :: Sprite -> Rectangle
 spriteRect (Sprite {..}) = mkRectangle $ Position (frameIndex * width)
                                                   (index * height)
-                                                  size
-                                                  size
+                                                  width
+                                                  height
   
