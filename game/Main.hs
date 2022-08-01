@@ -148,8 +148,8 @@ mkplayer :: MonadIO m => SDL.Renderer -> ClSF m cl () [Entity]
 mkplayer ren = constMCl $ liftIO $ do
   xpos <- randomRIO (0 :: CInt, 500)
   ypos <- randomRIO (0 :: CInt, 500)
-  let e1 = mapTexture defaultEntity $ const (Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png")
-      e2 = mapPosition e1 $ const (Just $ SDL.Rectangle (SDL.P (SDL.V2 xpos ypos)) (SDL.V2 64 64))
+  let e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+      e2 = setPosition e1 $ Just $ Position xpos ypos 64 64
   return [ e2 ]
 
 drawStuff ren = mkplayer ren >>> draw ren >>> render ren
