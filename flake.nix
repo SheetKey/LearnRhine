@@ -50,6 +50,9 @@
 
             # Random
             haskellPackages.random
+
+            # Generic lens
+            haskellPackages.generic-lens
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };
