@@ -1,13 +1,19 @@
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds #-}
 
 module FRP.Rhine.SDL.Entity
   ( Entity
+  , isActive
   , getTexture
   , getPosition
+  , getSprite
   , defaultEntity
-  , mapTexture
-  , mapPosition
+  , setIsActive
+  , setTexture
+  , setPosition
+  , setSprite
   ) where
 
 import FRP.Rhine
@@ -17,33 +23,33 @@ import FRP.Rhine.SDL.Components
 import qualified SDL
 import qualified SDL.Image as SDLI
 
+import GHC.Generics (Generic)
+import Data.Generics.Product.Fields
+
 
 data Entity = Entity
   { isActive :: Bool
   , getTexture :: Maybe (IO SDL.Texture)
   , getPosition :: Maybe Position
+  , getSprite :: Maybe Sprite
   }
+  deriving (Generic)
 
 defaultEntity :: Entity
 defaultEntity = Entity
                 True
                 Nothing
                 Nothing
-
-mapIsActive :: Entity -> (Bool -> Bool) -> Entity
-mapIsActive (Entity {..}) f = Entity (f isActive) getTexture getPosition
+                Nothing
 
 setIsActive :: Entity -> Bool -> Entity
-setIsActive (Entity {..}) b = Entity b getTexture getPosition
-                
-mapTexture :: Entity -> (Maybe (IO SDL.Texture) -> Maybe (IO SDL.Texture)) -> Entity
-mapTexture (Entity {..}) f = Entity isActive (f getTexture) getPosition
+setIsActive ent val = setField @"isActive" val ent
 
 setTexture :: Entity -> Maybe (IO SDL.Texture) -> Entity
-setTexture (Entity {..}) tex = Entity isActive tex getPosition
-
-mapPosition :: Entity -> (Maybe Position -> Maybe Position) -> Entity
-mapPosition (Entity {..}) f = Entity isActive getTexture (f getPosition)
+setTexture ent val = setField @"getTexture" val ent
 
 setPosition :: Entity -> Maybe Position -> Entity
-setPosition (Entity {..}) pos = Entity isActive getTexture pos
+setPosition ent val = setField @"getPosition" val ent
+
+setSprite :: Entity -> Maybe Sprite -> Entity
+setSprite ent val = setField @"getSprite" val ent
