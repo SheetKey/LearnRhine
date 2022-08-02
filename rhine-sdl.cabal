@@ -30,6 +30,7 @@ library
                     , FRP.Rhine.SDL.Init
                     , FRP.Rhine.SDL.Entity
 
+                    , FRP.Rhine.SDL.Clock
                     , FRP.Rhine.SDL.Clock.SDLClock
                     , FRP.Rhine.SDL.Clock.SDLQuitClock
                     
@@ -37,6 +38,7 @@ library
                     , FRP.Rhine.SDL.Process.Render
                     , FRP.Rhine.SDL.Process.Draw
                     , FRP.Rhine.SDL.Process.Active
+                    , FRP.Rhine.SDL.Process.Animate
 
                     , FRP.Rhine.SDL.Components
                     , FRP.Rhine.SDL.Components.Position
