@@ -6,8 +6,7 @@ module FRP.Rhine.SDL
 import FRP.Rhine.SDL.Init                as X
 import FRP.Rhine.SDL.Entity              as X
 
-import FRP.Rhine.SDL.Clock.SDLClock      as X
-import FRP.Rhine.SDL.Clock.SDLQuitClock  as X
+import FRP.Rhine.SDL.Clock as X
 
 import FRP.Rhine.SDL.Process             as X
 
