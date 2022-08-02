@@ -26,7 +26,7 @@ import Foreign.C.Types
 import System.Random
 
 main :: IO ()
-main = main6
+main = main7
 
 {--------------------------------------------
 Basic SDL
@@ -143,17 +143,51 @@ A better background
 
 {--------------------------------------------
 A player
+NOTE: this example is broken by code rewrites
 -}-------------------------------------------
-mkplayer :: MonadIO m => SDL.Renderer -> ClSF m cl () [Entity] 
-mkplayer ren = constMCl $ liftIO $ do
-  xpos <- randomRIO (0 :: CInt, 500)
-  ypos <- randomRIO (0 :: CInt, 500)
-  let e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
-      e2 = setPosition e1 $ Just $ Position xpos ypos 64 64
-  return [ e2 ]
+--mkplayer :: MonadIO m => SDL.Renderer -> ClSF m cl () [Entity] 
+--mkplayer ren = constMCl $ liftIO $ do
+--  xpos <- randomRIO (0 :: CInt, 500)
+--  ypos <- randomRIO (0 :: CInt, 500)
+--  let e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+--      e2 = setPosition e1 $ Just $ Position xpos ypos 64 64
+--  return [ e2 ]
+--
+--drawStuff ren = mkplayer ren >>> draw ren >>> render ren
+--
+--loop6 win ren = drawStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+--
+--main6 = sdlInitAndFlow loop6
 
-drawStuff ren = mkplayer ren >>> draw ren >>> render ren
+{--------------------------------------------
+An animated player
+-}-------------------------------------------
+--animPlayer :: SDL.Renderer -> [Entity]
+--animPlayer ren = constMCl $ liftIO $ do
+--  let e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+--      e2 = setPosition e1 $ Just $ Position 100 100 64 64
+--      e3 = setSprite e2 $ Just $ Sprite 0 4 0 32 32
+--  return [ e3 ]
 
-loop6 win ren = drawStuff ren @@ waitClock ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+--animDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 () ()
+--animDraw ren = feedback [e3] (animate >>> draw ren)
+--  where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+--        e2 = setPosition e1 $ Just $ Position 100 100 64 64
+--        e3 = setSprite e2 $ Just $ Sprite 0 4 0 32 32
 
-main6 = sdlInitAndFlow loop6
+animDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
+animDraw ren = animate >>> draw ren
+
+loopAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 ((),[Entity]) ((),[Entity])
+loopAnimDraw ren = startFeedback >>> animDraw ren >>> endFeedback
+
+loopAnimDrawRen :: MonadIO m => SDL.Renderer -> Entity -> ClSF m FPS60 () ()
+loopAnimDrawRen ren ent = feedback [ent] (loopAnimDraw ren) >>> (render ren)
+
+loop7 win ren = loopAnimDrawRen ren ent @@ waitClock
+                ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+  where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+        e2 = setPosition e1 $ Just $ Position 100 100 64 64
+        ent = setSprite e2 $ Just $ Sprite 0 4 0 32 32
+
+main7 = sdlInitAndFlow loop7
