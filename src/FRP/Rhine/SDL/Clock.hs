@@ -1,6 +1,8 @@
+{-# LANGUAGE DataKinds #-}
+
 module FRP.Rhine.SDL.Clock
   ( module X
-  , FRP.Rhine.SDL.Clock
+  , module FRP.Rhine.SDL.Clock
   ) where 
 
 import FRP.Rhine.SDL.Clock.SDLClock as X
