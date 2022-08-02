@@ -5,3 +5,4 @@ module FRP.Rhine.SDL.Process
 import FRP.Rhine.SDL.Process.Render as X
 import FRP.Rhine.SDL.Process.Draw as X
 import FRP.Rhine.SDL.Process.Active as X
+import FRP.Rhine.SDL.Process.Animate as X
