@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module FRP.Rhine.SDL.Process.Animate
   ( animate
@@ -23,10 +24,18 @@ updateFrame ent = setSprite ent (fmap incFrameIndex $ getSprite ent)
 animateHelper :: [Entity] -> [Entity]
 animateHelper = fmap updateFrame
   
-animateFeedback :: Monad m => ClSF m cl ([Entity],CInt) ([Entity],CInt)
-animateFeedback = proc (es, i) -> if mod i 60 == 0
-                                  then returnA -< (animateHelper es, i + 1)
-                                  else returnA -< (es, i + 1)
+animateFeedback :: (Monad m, TimeDomain (Time cl), Diff (Time cl) ~ Double)
+                => ClSF m cl ([Entity], Maybe (Time cl)) ([Entity], Maybe (Time cl))
+animateFeedback = proc (es, mlast) ->
+  case mlast of
+    Nothing -> do
+      current <- absoluteS -< ()
+      returnA -< (es, Just current)
+    Just last -> do
+      current <- absoluteS -< ()
+      if diffTime current last >= 1
+        then returnA -< (animateHelper es, Just current)
+        else returnA -< (es, Just last)
 
-animate :: Monad m => ClSF m cl [Entity] [Entity]
-animate = feedback 0 animateFeedback
+animate :: (Monad m, TimeDomain (Time cl), Diff (Time cl) ~ Double) => ClSF m cl [Entity] [Entity]
+animate = feedback Nothing animateFeedback
