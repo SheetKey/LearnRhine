@@ -5,11 +5,13 @@
 module FRP.Rhine.SDL.Entity
   ( Entity
   , isActive
+  , isPlayer
   , getTexture
   , getPosition
   , getSprite
   , defaultEntity
   , setIsActive
+  , setIsPlayer
   , setTexture
   , setPosition
   , setSprite
@@ -28,6 +30,7 @@ import Data.Generics.Product.Fields
 
 data Entity = Entity
   { isActive :: Bool
+  , isPlayer :: Bool
   , getTexture :: Maybe (IO SDL.Texture)
   , getPosition :: Maybe Position
   , getSprite :: Maybe Sprite
@@ -37,12 +40,16 @@ data Entity = Entity
 defaultEntity :: Entity
 defaultEntity = Entity
                 True
+                False
                 Nothing
                 Nothing
                 Nothing
 
 setIsActive :: Entity -> Bool -> Entity
 setIsActive ent val = setField @"isActive" val ent
+
+setIsPlayer :: Entity -> Bool -> Entity
+setIsPlayer ent val = setField @"isPlayer" val ent
 
 setTexture :: Entity -> Maybe (IO SDL.Texture) -> Entity
 setTexture ent val = setField @"getTexture" val ent
