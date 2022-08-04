@@ -6,6 +6,7 @@ module FRP.Rhine.SDL.Clock.SDLQuitClock
 
 import FRP.Rhine
 import FRP.Rhine.SDL.Clock.SDLClock
+import FRP.Rhine.SDL.Util
 
 import qualified SDL
 import System.Exit (exitSuccess)
@@ -27,7 +28,7 @@ sdlQuitAllRh code win = sdlQuitAll win @@ SelectClock SDLClock
   (\event ->
      case SDL.eventPayload event of
        SDL.KeyboardEvent kEvent ->
-         if SDL.keyboardEventKeyMotion kEvent == SDL.Pressed
+         if isPressed kEvent 
             && SDL.keysymKeycode (SDL.keyboardEventKeysym kEvent) == code
          then Just ()
          else Nothing
