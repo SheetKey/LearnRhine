@@ -35,3 +35,7 @@ instance GetClockProxy SDLClock
 
 instance Semigroup SDLClock where
   _ <> _ = SDLClock
+
+
+pollEvent :: MonadIO m => ClSF m SDLClock () SDL.Event
+pollEvent = tagS
