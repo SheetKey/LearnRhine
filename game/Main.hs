@@ -26,7 +26,7 @@ import Foreign.C.Types
 import System.Random
 
 main :: IO ()
-main = main7
+main = main8
 
 {--------------------------------------------
 Basic SDL
@@ -174,20 +174,43 @@ An animated player
 --  where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
 --        e2 = setPosition e1 $ Just $ Position 100 100 64 64
 --        e3 = setSprite e2 $ Just $ Sprite 0 4 0 32 32
+-- NOTE: THE FOLLOWING IS BROKEN BY CHANGES TO 'startFeedback'
+-- animDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
+-- animDraw ren = animate >>> draw ren
+-- 
+-- loopAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 ((),[Entity]) ((),[Entity])
+-- loopAnimDraw ren = startFeedback >>> animDraw ren >>> endFeedback
+-- 
+-- loopAnimDrawRen :: MonadIO m => SDL.Renderer -> Entity -> ClSF m FPS60 () ()
+-- loopAnimDrawRen ren ent = feedback [ent] (loopAnimDraw ren) >>> (render ren)
+-- 
+-- loop7 win ren = loopAnimDrawRen ren ent @@ waitClock
+--                 ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+--   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
+--         e2 = setPosition e1 $ Just $ Position 100 100 64 64
+--         ent = setSprite e2 $ Just $ Sprite 0 4 0 32 32
+-- 
+-- main7 = sdlInitAndFlow loop7
 
-animDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
-animDraw ren = animate >>> draw ren
+{--------------------------------------------
+An moving player
+-}-------------------------------------------
+moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Point, [Entity]) [Entity]
+moveAnimDraw ren = movePlayer (1,1) >>> animate >>> draw ren
 
-loopAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 ((),[Entity]) ((),[Entity])
-loopAnimDraw ren = startFeedback >>> animDraw ren >>> endFeedback
+loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Point ()
+loopMove ren ents = feedback ents (startFeedback >>> moveAnimDraw ren >>> endFeedback)
+                    >>> (render ren)
 
-loopAnimDrawRen :: MonadIO m => SDL.Renderer -> Entity -> ClSF m FPS60 () ()
-loopAnimDrawRen ren ent = feedback [ent] (loopAnimDraw ren) >>> (render ren)
+loop8Help ren ents = getPoint >-- keepLast (0,0) -@- concurrently
+                     --> loopMove ren ents @@ waitClock
 
-loop7 win ren = loopAnimDrawRen ren ent @@ waitClock
-                ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+loop8 win ren = loop8Help ren ents
+                --  ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
         e2 = setPosition e1 $ Just $ Position 100 100 64 64
-        ent = setSprite e2 $ Just $ Sprite 0 4 0 32 32
+        e3 = setIsPlayer e2 True
+        ent = setSprite e3 $ Just $ Sprite 0 4 0 32 32
+        ents = [ent]
 
-main7 = sdlInitAndFlow loop7
+main8 = sdlInitAndFlow loop8
