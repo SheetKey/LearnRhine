@@ -21,17 +21,25 @@ processInput = feedback (0,0) $ proc (mevent, vel@(x,y)) ->
                                         SDL.KeyboardEvent kEvent ->
                                           case SDL.keysymKeycode (SDL.keyboardEventKeysym kEvent ) of
                                             SDL.KeycodeW -> if isPressed kEvent
-                                                            then returnA -< ((x, (-10)), (x, (-10)))
-                                                            else returnA -< ((x, 0), (x, 0))
+                                                            then returnA -< ((x, (-1)), (x, (-1)))
+                                                            else if y == (-1)
+                                                                 then returnA -< ((x, 0), (x, 0))
+                                                                 else returnA -< (vel, vel)
                                             SDL.KeycodeA -> if isPressed kEvent
-                                                            then returnA -< (((-10), y), ((-10), y))
-                                                            else returnA -< ((0, y), (0, y))
+                                                            then returnA -< (((-1), y), ((-1), y))
+                                                            else if x == (-1)
+                                                                 then returnA -< ((0, y), (0, y))
+                                                                 else returnA -< (vel, vel)
                                             SDL.KeycodeS -> if isPressed kEvent
-                                                            then returnA -< ((x, 10), (x, 10)) 
-                                                            else returnA -< ((x, 0), (x, 0))
+                                                            then returnA -< ((x, 1), (x, 1)) 
+                                                            else if y == 1
+                                                                 then returnA -< ((x, 0), (x, 0))
+                                                                 else returnA -< (vel, vel)
                                             SDL.KeycodeD -> if isPressed kEvent
-                                                            then returnA -< ((10, y), (10, y))
-                                                            else returnA -< ((0, y), (0, y))
+                                                            then returnA -< ((1, y), (1, y))
+                                                            else if x == 1
+                                                                 then returnA -< ((0, y), (0, y))
+                                                                 else returnA -< (vel, vel)
                                             _ -> returnA -< (vel, vel)
                                         _ -> returnA -< (vel, vel)
 
