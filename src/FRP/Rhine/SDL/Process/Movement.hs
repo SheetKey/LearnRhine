@@ -68,11 +68,7 @@ newPlayerPos pt e = if isPlayer e
 setPlayerPos :: (Point, [Entity]) -> [Entity]
 setPlayerPos (pt, es) = fmap (newPlayerPos pt) es
 
-movePlayer :: (Monad m, Diff (Time cl) ~ Double)
-           => ClSF m cl (Velocity, [Entity]) [Entity]
---movePlayer = arr updatePlayerPos
---movePlayer initPos = first integral >>> first (arr (^+^ initPos)) >>> arr setPlayerPos
-
+movePlayer :: (Monad m, Diff (Time cl) ~ Double) => ClSF m cl (Velocity, [Entity]) [Entity]
 movePlayer = proc (vel, ents) -> do
   pos <- integral -< vel
   initPos <- keepFirst -< foldr (\e b -> if isPlayer e
