@@ -196,7 +196,7 @@ An animated player
 An moving player
 -}-------------------------------------------
 moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Point, [Entity]) [Entity]
-moveAnimDraw ren = movePlayer (1,1) >>> animate >>> draw ren
+moveAnimDraw ren = movePlayer >>> animate >>> draw ren
 
 loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Point ()
 loopMove ren ents = feedback ents (startFeedback >>> moveAnimDraw ren >>> endFeedback)
