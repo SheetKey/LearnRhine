@@ -49,8 +49,8 @@ normalizeSafe v = if nv == 0 then v else v ^/ nv
 
 getPoint :: Rhine IO (SequentialClock IO SDLClock Busy) () Velocity
 getPoint = pollEvent @@ SDLClock
-           >-- fifoBounded 25 -@- concurrently -->
-           (processInput >>> arr normalizeSafe >>> traceWith (liftIO . putStrLn) "norm:" ) @@ Busy
+           >-- fifoUnbounded -@- concurrently -->
+           (processInput >>> arr normalizeSafe >>> arr (200 *^)) @@ Busy
 
 playerPos :: Point -> Entity -> Entity
 playerPos pt e = if isPlayer e 
