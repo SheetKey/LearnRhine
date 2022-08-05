@@ -69,6 +69,16 @@ setPlayerPos :: (Point, [Entity]) -> [Entity]
 setPlayerPos (pt, es) = fmap (newPlayerPos pt) es
 
 movePlayer :: (Monad m, Diff (Time cl) ~ Double)
-           => Point -> ClSF m cl (Velocity, [Entity]) [Entity]
+           => ClSF m cl (Velocity, [Entity]) [Entity]
 --movePlayer = arr updatePlayerPos
-movePlayer initPos = first integral >>> first (arr (^+^ initPos)) >>> arr setPlayerPos
+--movePlayer initPos = first integral >>> first (arr (^+^ initPos)) >>> arr setPlayerPos
+
+movePlayer = proc (vel, ents) -> do
+  pos <- integral -< vel
+  initPos <- keepFirst -< foldr (\e b -> if isPlayer e
+                                         then case getPosition e of
+                                                Nothing -> b
+                                                Just p  -> mkPoint p
+                                         else b
+                                ) (0,0) ents
+  arr setPlayerPos -< (pos ^+^ initPos, ents)
