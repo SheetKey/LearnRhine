@@ -195,14 +195,14 @@ An animated player
 {--------------------------------------------
 An moving player
 -}-------------------------------------------
-moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Point, [Entity]) [Entity]
-moveAnimDraw ren = movePlayer >>> animate >>> draw ren
+moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
+moveAnimDraw ren = setPlayerVelocity >>> move >>> animate >>> draw ren
 
-loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Point ()
-loopMove ren ents = feedback ents (startFeedback >>> moveAnimDraw ren >>> endFeedback)
+loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Velocity ()
+loopMove ren ents = feedback ents (startFeedbackWith >>> moveAnimDraw ren >>> endFeedback)
                     >>> (render ren)
 
-loop8Help ren ents = getPoint >-- keepLast (0,0) -@- concurrently
+loop8Help ren ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
                      --> loopMove ren ents @@ waitClock
 
 loop8 win ren = loop8Help ren ents
@@ -210,7 +210,12 @@ loop8 win ren = loop8Help ren ents
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
         e2 = setPosition e1 $ Just $ Position 100 100 64 64
         e3 = setIsPlayer e2 True
-        ent = setSprite e3 $ Just $ Sprite 0 4 0 32 32
-        ents = [ent]
+        e4 = setVelocity e3 $ Just (200,0)
+        ent = setSprite e4 $ Just $ Sprite 0 4 0 32 32
+
+        en1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0002.png"
+        en2 = setPosition en1 $ Just $ Position 100 200 64 64
+        en3 = setSprite en2 $ Just $ Sprite 0 4 0 32 32
+        ents = [ent, en3]
 
 main8 = sdlInitAndFlow loop8
