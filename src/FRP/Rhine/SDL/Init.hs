@@ -21,8 +21,11 @@ sdlInitAndFlow rhine = do
   flow $ rhine window renderer
 
 
-startFeedback :: Monad m => ClSF m cl (b, a) (b, a)
-startFeedback = proc (b, a) -> returnA -< (b, a)
+startFeedback :: Monad m => ClSF m cl (b, a) a
+startFeedback = proc (b, a) -> returnA -< a
+
+startFeedbackWith :: Monad m => ClSF m cl (b, a) (b, a)
+startFeedbackWith = proc (b, a) -> returnA -< (b, a)
 
 endFeedback :: Monad m => ClSF m cl a ((), a)
 endFeedback = proc a -> returnA -< ((), a)
