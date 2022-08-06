@@ -41,10 +41,12 @@ library
                     , FRP.Rhine.SDL.Process.Active
                     , FRP.Rhine.SDL.Process.Animate
                     , FRP.Rhine.SDL.Process.Movement
+                    , FRP.Rhine.SDL.Process.Velocity
 
                     , FRP.Rhine.SDL.Components
                     , FRP.Rhine.SDL.Components.Position
                     , FRP.Rhine.SDL.Components.Sprite
+                    , FRP.Rhine.SDL.Components.Velocity
     
     build-depends:    base ^>=4.15.1.0
                     , rhine
