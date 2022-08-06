@@ -10,71 +10,42 @@ import FRP.Rhine.SDL.Clock
 import qualified SDL
 
 import FRP.Rhine.SDL.Entity
-import FRP.Rhine.SDL.Components.Position
+import FRP.Rhine.SDL.Components
 
-processInput :: Monad m => ClSF m cl (Maybe SDL.Event) Velocity
-processInput = feedback (0,0) $ proc (mevent, vel@(x,y)) ->
-                                  case mevent of
-                                    Nothing -> returnA -< (vel, vel)
-                                    Just event -> 
-                                      case SDL.eventPayload event of
-                                        SDL.KeyboardEvent kEvent ->
-                                          case SDL.keysymKeycode (SDL.keyboardEventKeysym kEvent ) of
-                                            SDL.KeycodeW -> if isPressed kEvent
-                                                            then returnA -< ((x, (-1)), (x, (-1)))
-                                                            else if y == (-1)
-                                                                 then returnA -< ((x, 0), (x, 0))
-                                                                 else returnA -< (vel, vel)
-                                            SDL.KeycodeA -> if isPressed kEvent
-                                                            then returnA -< (((-1), y), ((-1), y))
-                                                            else if x == (-1)
-                                                                 then returnA -< ((0, y), (0, y))
-                                                                 else returnA -< (vel, vel)
-                                            SDL.KeycodeS -> if isPressed kEvent
-                                                            then returnA -< ((x, 1), (x, 1)) 
-                                                            else if y == 1
-                                                                 then returnA -< ((x, 0), (x, 0))
-                                                                 else returnA -< (vel, vel)
-                                            SDL.KeycodeD -> if isPressed kEvent
-                                                            then returnA -< ((1, y), (1, y))
-                                                            else if x == 1
-                                                                 then returnA -< ((0, y), (0, y))
-                                                                 else returnA -< (vel, vel)
-                                            _ -> returnA -< (vel, vel)
-                                        _ -> returnA -< (vel, vel)
 
-normalizeSafe :: (VectorSpace v a) => v -> v
-normalizeSafe v = if nv == 0 then v else v ^/ nv
-  where nv = norm v
+--playerPos :: Point -> Entity -> Entity
+--playerPos pt e = if isPlayer e 
+--                 then setPosition e $ fmap (modifyPosition pt) (getPosition e)
+--                 else e
+--
+--updatePlayerPos :: (Point, [Entity]) -> [Entity]
+--updatePlayerPos (pt, es) = fmap (playerPos pt) es
+--
+--newPlayerPos :: Point -> Entity -> Entity
+--newPlayerPos pt e = if isPlayer e 
+--                    then setPosition e $ fmap (setFromPoint pt) (getPosition e)
+--                    else e
+--
+--setPlayerPos :: (Point, [Entity]) -> [Entity]
+--setPlayerPos (pt, es) = fmap (newPlayerPos pt) es
+--
+--movePlayer :: (Monad m, Diff (Time cl) ~ Double) => ClSF m cl (Velocity, [Entity]) [Entity]
+--movePlayer = proc (vel, ents) -> do
+--  pos <- integral -< vel
+--  initPos <- keepFirst -< foldr (\e b -> if isPlayer e
+--                                         then case getPosition e of
+--                                                Nothing -> b
+--                                                Just p  -> mkPoint p
+--                                         else b
+--                                ) (0,0) ents
+--  arr setPlayerPos -< (pos ^+^ initPos, ents)
 
-getPoint :: Rhine IO (SequentialClock IO SDLClock Busy) () Velocity
-getPoint = pollEvent @@ SDLClock
-           >-- fifoUnbounded -@- concurrently -->
-           (processInput >>> arr normalizeSafe >>> arr (200 *^)) @@ Busy
+updatePos :: Double -> Entity -> Entity
+updatePos t e = case getMVelocity e of
+                  Nothing  -> e
+                  Just vel -> setPosition e $ fmap (modifyPosition (t *^ vel)) (getMPosition e)
 
-playerPos :: Point -> Entity -> Entity
-playerPos pt e = if isPlayer e 
-                 then setPosition e $ fmap (updatePosition pt) (getPosition e)
-                 else e
-
-updatePlayerPos :: (Point, [Entity]) -> [Entity]
-updatePlayerPos (pt, es) = fmap (playerPos pt) es
-
-newPlayerPos :: Point -> Entity -> Entity
-newPlayerPos pt e = if isPlayer e 
-                    then setPosition e $ fmap (setFromPoint pt) (getPosition e)
-                    else e
-
-setPlayerPos :: (Point, [Entity]) -> [Entity]
-setPlayerPos (pt, es) = fmap (newPlayerPos pt) es
-
-movePlayer :: (Monad m, Diff (Time cl) ~ Double) => ClSF m cl (Velocity, [Entity]) [Entity]
-movePlayer = proc (vel, ents) -> do
-  pos <- integral -< vel
-  initPos <- keepFirst -< foldr (\e b -> if isPlayer e
-                                         then case getPosition e of
-                                                Nothing -> b
-                                                Just p  -> mkPoint p
-                                         else b
-                                ) (0,0) ents
-  arr setPlayerPos -< (pos ^+^ initPos, ents)
+move :: (Monad m, Diff (Time cl) ~ Double) => ClSF m cl [Entity] [Entity]
+move = proc ents -> do
+  _sinceLast <- sinceLastS -< ()
+  returnA -< fmap (updatePos _sinceLast) ents
