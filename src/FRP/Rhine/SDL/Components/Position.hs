@@ -12,13 +12,12 @@ module FRP.Rhine.SDL.Components.Position
   ( Position (..)
   , Rectangle
   , Point
-  , Velocity
   , XPos
   , YPos
   , Width
   , Height
   , mkRectangle
-  , updatePosition
+  , modifyPosition
   , setFromPoint
   , mkPoint
   , CInt (..)
@@ -45,16 +44,14 @@ data Position = Position XPos YPos Width Height
 
 -- | A point is a tuple of 'Double's. This has an instance in the 'VectorSpace' typeclass.
 type Point = (Double, Double)
--- | A velocity is a tuple of 'Double's. This has an instance in the 'VectorSpace' typeclass.
-type Velocity = (Double, Double)
 
 -- | A utility for converting. 
 mkRectangle :: Position -> Rectangle
 mkRectangle (Position x y w l) = SDL.Rectangle (SDL.P (SDL.V2 x y)) (SDL.V2 w l)
 
 -- | modifies the current position with a new point.
-updatePosition :: Point -> Position -> Position
-updatePosition (nx, ny) (Position x y w h) = Position (round nx + x) (round ny + y) w h
+modifyPosition :: Point -> Position -> Position
+modifyPosition (nx, ny) (Position x y w h) = Position (round nx + x) (round ny + y) w h
 
 -- | Sets the new position with a new point.
 setFromPoint :: Point -> Position -> Position
