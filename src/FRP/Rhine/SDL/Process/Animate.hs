@@ -19,7 +19,7 @@ import FRP.Rhine.SDL.Components
 
 
 updateFrame :: Entity -> Entity
-updateFrame ent = setSprite ent (fmap incFrameIndex $ getSprite ent)
+updateFrame ent = setSprite ent (fmap incFrameIndex $ getMSprite ent)
 
 animateHelper :: [Entity] -> [Entity]
 animateHelper = fmap updateFrame
