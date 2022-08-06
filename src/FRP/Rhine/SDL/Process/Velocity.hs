@@ -1,6 +1,13 @@
+{-# LANGUAGE Arrows #-}
+
 module FRP.Rhine.SDL.Process.Velocity where
 
 import FRP.Rhine
+
+import qualified SDL
+
+import FRP.Rhine.SDL.Clock
+import FRP.Rhine.SDL.Util
 
 import FRP.Rhine.SDL.Entity
 import FRP.Rhine.SDL.Components
