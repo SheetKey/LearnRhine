@@ -7,3 +7,4 @@ import FRP.Rhine.SDL.Process.Draw as X
 import FRP.Rhine.SDL.Process.Active as X
 import FRP.Rhine.SDL.Process.Animate as X
 import FRP.Rhine.SDL.Process.Movement as X
+import FRP.Rhine.SDL.Process.Velocity as X
