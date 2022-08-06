@@ -14,15 +14,17 @@ module FRP.Rhine.SDL.Entity
   ( Entity
   , isActive
   , isPlayer
-  , getTexture
-  , getPosition
-  , getSprite
+  , getMTexture
+  , getMPosition
+  , getMSprite
+  , getMVelocity
   , defaultEntity
   , setIsActive
   , setIsPlayer
   , setTexture
   , setPosition
   , setSprite
+  , setVelocity
   ) where
 
 import FRP.Rhine
@@ -37,11 +39,12 @@ import Data.Generics.Product.Fields
 
 -- | An entity is a collection of necessary and optional properties.
 data Entity = Entity
-  { isActive :: Bool                     -- ^ An entity either is or is not active.
-  , isPlayer :: Bool                     -- ^ An entity either is or is not the player.
-  , getTexture :: Maybe (IO SDL.Texture) -- ^ An entity might have a texture.
-  , getPosition :: Maybe Position        -- ^ An entity might have a position.
-  , getSprite :: Maybe Sprite            -- ^ An entity might have a sprite (animation).
+  { isActive :: Bool                      -- ^ An entity either is or is not active.
+  , isPlayer :: Bool                      -- ^ An entity either is or is not the player.
+  , getMTexture :: Maybe (IO SDL.Texture) -- ^ An entity might have a texture.
+  , getMPosition :: Maybe Position        -- ^ An entity might have a position.
+  , getMSprite :: Maybe Sprite            -- ^ An entity might have a sprite (animation).
+  , getMVelocity :: Maybe Velocity        -- ^ An entity might have a velocity. 
   }
   deriving (Generic)
 
@@ -51,6 +54,7 @@ defaultEntity :: Entity
 defaultEntity = Entity
                 True
                 False
+                Nothing
                 Nothing
                 Nothing
                 Nothing
@@ -65,12 +69,16 @@ setIsPlayer ent val = setField @"isPlayer" val ent
 
 -- | Set the texture.
 setTexture :: Entity -> Maybe (IO SDL.Texture) -> Entity
-setTexture ent val = setField @"getTexture" val ent
+setTexture ent val = setField @"getMTexture" val ent
 
 -- | Set the position.
 setPosition :: Entity -> Maybe Position -> Entity
-setPosition ent val = setField @"getPosition" val ent
+setPosition ent val = setField @"getMPosition" val ent
 
 -- | Set the sprite.
 setSprite :: Entity -> Maybe Sprite -> Entity
-setSprite ent val = setField @"getSprite" val ent
+setSprite ent val = setField @"getMSprite" val ent
+
+-- | Set the velocity
+setVelocity :: Entity -> Maybe Velocity -> Entity
+setVelocity ent val = setField @"getMVelocity" val ent
