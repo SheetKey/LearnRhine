@@ -20,6 +20,7 @@ module FRP.Rhine.SDL.Components.Position
   , modifyPosition
   , setFromPoint
   , mkPoint
+  , setWH
   , CInt (..)
   ) where
 
@@ -49,7 +50,7 @@ type Point = (Double, Double)
 mkRectangle :: Position -> Rectangle
 mkRectangle (Position x y w l) = SDL.Rectangle (SDL.P (SDL.V2 x y)) (SDL.V2 w l)
 
--- | modifies the current position with a new point.
+-- | Modifies the current position with a new point.
 modifyPosition :: Point -> Position -> Position
 modifyPosition (nx, ny) (Position x y w h) = Position (round nx + x) (round ny + y) w h
 
@@ -60,3 +61,7 @@ setFromPoint (nx, ny) (Position _ _ w h) = Position (round (nx)) (round (ny)) w 
 -- | Converts the position into a point. 
 mkPoint :: Position -> Point
 mkPoint (Position x y _ _) = (fromIntegral x, fromIntegral y)
+
+-- | Set width and height
+setWH :: Position -> (Width, Height) -> Position
+setWH (Position x y _ _) (w, h) = Position x y w h
