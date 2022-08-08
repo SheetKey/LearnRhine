@@ -18,6 +18,8 @@ module FRP.Rhine.SDL.Entity
   , getMPosition
   , getMSprite
   , getMVelocity
+  , getMCollision
+  , getMRotation
   , defaultEntity
   , setIsActive
   , setIsPlayer
@@ -25,6 +27,8 @@ module FRP.Rhine.SDL.Entity
   , setPosition
   , setSprite
   , setVelocity
+  , setCollision
+  , setRotation
   ) where
 
 import FRP.Rhine
@@ -39,12 +43,14 @@ import Data.Generics.Product.Fields
 
 -- | An entity is a collection of necessary and optional properties.
 data Entity = Entity
-  { isActive :: Bool                      -- ^ An entity either is or is not active.
-  , isPlayer :: Bool                      -- ^ An entity either is or is not the player.
-  , getMTexture :: Maybe (IO SDL.Texture) -- ^ An entity might have a texture.
-  , getMPosition :: Maybe Position        -- ^ An entity might have a position.
-  , getMSprite :: Maybe Sprite            -- ^ An entity might have a sprite (animation).
-  , getMVelocity :: Maybe Velocity        -- ^ An entity might have a velocity. 
+  { isActive :: Bool                          -- ^ An entity either is or is not active.
+  , isPlayer :: Bool                          -- ^ An entity either is or is not the player.
+  , getMTexture :: Maybe (IO SDL.Texture)     -- ^ An entity might have a texture.
+  , getMPosition :: Maybe Position            -- ^ An entity might have a position.
+  , getMSprite :: Maybe Sprite                -- ^ An entity might have a sprite (animation).
+  , getMVelocity :: Maybe Velocity            -- ^ An entity might have a velocity. 
+  , getMCollision :: Maybe (Collision Entity) -- ^ An entity might be able to collide.
+  , getMRotation :: Maybe Rotation            -- ^ An entity might be rotated.
   }
   deriving (Generic)
 
@@ -54,6 +60,8 @@ defaultEntity :: Entity
 defaultEntity = Entity
                 True
                 False
+                Nothing
+                Nothing
                 Nothing
                 Nothing
                 Nothing
@@ -79,6 +87,14 @@ setPosition ent val = setField @"getMPosition" val ent
 setSprite :: Entity -> Maybe Sprite -> Entity
 setSprite ent val = setField @"getMSprite" val ent
 
--- | Set the velocity
+-- | Set the velocity.
 setVelocity :: Entity -> Maybe Velocity -> Entity
 setVelocity ent val = setField @"getMVelocity" val ent
+
+-- | Set the collsion.
+setCollision :: Entity -> Maybe (Collision Entity) -> Entity
+setCollision ent val = setField @"getMCollision" val ent
+
+-- | Set the rotation.
+setRotation :: Entity -> Maybe Rotation -> Entity
+setRotation ent val = setField @"getMRotation" val ent
