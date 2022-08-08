@@ -196,7 +196,7 @@ An animated player
 An moving player
 -}-------------------------------------------
 moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
-moveAnimDraw ren = setPlayerVelocity >>> move >>> animate >>> draw ren
+moveAnimDraw ren = setPlayerVelocity >>> collide >>> move >>> animate >>> removeInactive >>> draw ren
 
 loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Velocity ()
 loopMove ren ents = feedback ents (startFeedbackWith >>> moveAnimDraw ren >>> endFeedback)
@@ -211,11 +211,15 @@ loop8 win ren = loop8Help ren ents
         e2 = setPosition e1 $ Just $ Position 100 100 64 64
         e3 = setIsPlayer e2 True
         e4 = setVelocity e3 $ Just (200,0)
-        ent = setSprite e4 $ Just $ Sprite 0 4 0 32 32
+        e5 = setCollision e4 $ Just $ Collision (50, 50) True
+             (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e))
+        ent = setSprite e5 $ Just $ Sprite 0 4 0 32 32
 
         en1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0002.png"
         en2 = setPosition en1 $ Just $ Position 100 200 64 64
         en3 = setSprite en2 $ Just $ Sprite 0 4 0 32 32
-        ents = [ent, en3]
+        en4 = setCollision en3 $ Just $ Collision (50, 50) True
+              (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e))
+        ents = [ent, en4]
 
 main8 = sdlInitAndFlow loop8
