@@ -14,4 +14,5 @@ checkActive (e:es) = if isActive e
                      else checkActive es
 
 removeInactive :: Monad m => ClSF m cl [Entity] [Entity]
-removeInactive = proc lst -> returnA -< checkActive lst
+removeInactive = arr checkActive
+--removeInactive = proc lst -> returnA -< checkActive lst
