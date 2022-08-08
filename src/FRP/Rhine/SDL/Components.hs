@@ -13,3 +13,5 @@ import Foreign.C.Types
 import FRP.Rhine.SDL.Components.Position as X
 import FRP.Rhine.SDL.Components.Sprite as X
 import FRP.Rhine.SDL.Components.Velocity as X
+import FRP.Rhine.SDL.Components.Collision as X
+import FRP.Rhine.SDL.Components.Rotation as X
