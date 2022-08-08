@@ -42,11 +42,15 @@ library
                     , FRP.Rhine.SDL.Process.Animate
                     , FRP.Rhine.SDL.Process.Movement
                     , FRP.Rhine.SDL.Process.Velocity
+                    , FRP.Rhine.SDL.Process.Collision
+                    , FRP.Rhine.SDL.Process.Rotate
 
                     , FRP.Rhine.SDL.Components
                     , FRP.Rhine.SDL.Components.Position
                     , FRP.Rhine.SDL.Components.Sprite
                     , FRP.Rhine.SDL.Components.Velocity
+                    , FRP.Rhine.SDL.Components.Collision
+                    , FRP.Rhine.SDL.Components.Rotation
     
     build-depends:    base ^>=4.15.1.0
                     , rhine
