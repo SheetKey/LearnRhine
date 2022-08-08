@@ -2,6 +2,7 @@ module FRP.Rhine.SDL.Process.Collision where
 
 import FRP.Rhine
 
+import FRP.Rhine.SDL.Entity
 import FRP.Rhine.SDL.Components
 
 doCollision :: Position -> Position -> Bool
@@ -13,12 +14,12 @@ doCollision (Position x1 y1 w1 h1) (Position x2 y2 w2 h2) =
   then True
   else False
 
-checkCollision Entity -> Entity -> Bool
+checkCollision :: Entity -> Entity -> Bool
 checkCollision e1 e2 =
-  case (getMPosiont e1, getMPosition e2) of
+  case (getMPosition e1, getMPosition e2) of
     (Nothing, _) -> False
     (_, Nothing) -> False
-    (Just e1P, e2P) ->
+    (Just e1P, Just e2P) ->
 
       case (getMCollision e1, getMCollision e2) of
         (Nothing, _) -> False
@@ -28,7 +29,25 @@ checkCollision e1 e2 =
           case (canHit e1C, canHit e2C) of
             (False, _) -> False
             (_, False) -> False
-            (True, True) -> doCollision (setWH e1P $ hitBox e1C) (setWH e2P $ hitBox e2C)
+            (True, True) ->
+
+              case (getMVelocity e1, getMVelocity e2) of
+                (Nothing, Nothing) ->
+                  doCollision
+                  (setWH e1P $ hitBox e1C)
+                  (setWH e2P $ hitBox e2C)
+                (Nothing, Just e2V) ->
+                  doCollision
+                  (setWH e1P $ hitBox e1C)
+                  (modifyPosition (0.05 *^ e2V) $ setWH e2P $ hitBox e2C)
+                (Just e1V, Nothing) ->
+                  doCollision
+                  (modifyPosition (0.05 *^ e1V) $ setWH e1P $ hitBox e1C)
+                  (setWH e2P $ hitBox e2C)
+                (Just e1V, Just e2V) ->
+                  doCollision
+                  (modifyPosition (0.05 *^ e1V) $ setWH e1P $ hitBox e1C)
+                  (modifyPosition (0.05 *^ e2V) $ setWH e2P $ hitBox e2C)
 
 collideOne :: Entity -> [Entity] -> (Entity, [Entity])
 collideOne e1 ents = (newE1, acc)
@@ -41,7 +60,8 @@ collideOne e1 ents = (newE1, acc)
                                               (Just c1, Just c2) ->
                                                 collideAcc (hitOther c2 e1
                                                            , es
-                                                           , acc ++ hitOther c1 e)
+                                                           , acc ++ [hitOther c1 e])
+                                       else collideAcc (e1, es, acc ++ [e])
         (newE1, _, acc) = collideAcc (e1, ents, [])
 
 collideAll :: [Entity] -> [Entity]
