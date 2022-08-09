@@ -9,3 +9,4 @@ import FRP.Rhine.SDL.Process.Animate as X
 import FRP.Rhine.SDL.Process.Movement as X
 import FRP.Rhine.SDL.Process.Velocity as X
 import FRP.Rhine.SDL.Process.Collision as X
+import FRP.Rhine.SDL.Process.Rotate as X
