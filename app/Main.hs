@@ -19,7 +19,7 @@ import Text.Read (readMaybe)
 import Data.Maybe (fromMaybe)
 
 main :: IO ()
-main = flow checkOrPrintRh
+main = flow finalTest
 
 --------------------------------------------------
 -- 1 second clock
@@ -292,3 +292,22 @@ quitRh = quitProgram @@ SelectClock StdinClock
 
 checkOrPrintRh :: Rhine IO (ParallelClock IO StdinClock SelectQ) () ()
 checkOrPrintRh = rhPrintMyLineRh ||@ schedSelectClockAndMain @|| quitRh 
+
+--------------------------------------------------
+-- Test parallel
+--------------------------------------------------
+test1S :: SN IO Second () String
+test1S = Synchronous $ arr $ const "first"
+
+test5S :: SN IO Second5 () String
+test5S = Synchronous $ arr $ const "second"
+
+testCombo :: SN IO (ParClock IO Second Second5) () String
+testCombo = test1S |||| test5S
+
+putStrLnM mstr = case mstr of
+  Nothing -> return ()
+  Just str -> putStrLn str
+
+finalTest = Rhine testCombo (ParallelClock waitClock waitClock scheduleMillisecond)
+            >-- keepLast "og" -@- concurrently --> (arrMCl putStrLn) @@ (waitClock :: Millisecond 500)
