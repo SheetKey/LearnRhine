@@ -20,11 +20,22 @@ drawHelper ren lst = sequence $ fmap (drawSprite ren) lst
 
 
 drawRect :: MonadIO m => SDL.Renderer -> Entity -> Maybe Rectangle -> m Entity
-drawRect ren ent rect = case getMTexture ent of
-                              Nothing    -> liftIO $ return ent
-                              Just iotex -> liftIO $ do
+drawRect ren ent rect = case (getMTexture ent, getMRotation ent) of
+                              (Nothing, _) -> liftIO $ return ent
+                              (Just iotex, Nothing) -> liftIO $ do
                                 tex <- iotex
                                 SDL.copy ren tex rect (fmap mkRectangle $ getMPosition ent)
+                                return ent
+                              (Just iotex, Just rot) -> liftIO $ do
+                                tex <- iotex
+                                SDL.copyEx
+                                  ren
+                                  tex
+                                  rect
+                                  (fmap mkRectangle $ getMPosition ent)
+                                  (angle rot)
+                                  (rotPoint rot)
+                                  (SDL.V2 False False)
                                 return ent
   
 
