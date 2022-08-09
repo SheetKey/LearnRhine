@@ -15,10 +15,10 @@ rotateTowards pt@(x, y) (e:es) = case getMRotation e of
                                    Just rot -> if towardsMouse rot
                                                then case getMPosition e of
                                                       Nothing -> e : rotateTowards pt es
-                                                      Just (Position xP yP _ _) ->
-                                                        let dx = fromIntegral (xP - x)
-                                                            dy = fromIntegral (yP - y)
-                                                            angle = (atan2 dy dx) * 180 / 3.14
+                                                      Just (Position xP yP w h) ->
+                                                        let dx = fromIntegral (xP - x) + ((fromIntegral w) / 2)
+                                                            dy = fromIntegral (yP - y) + ((fromIntegral h) / 2)
+                                                            angle = ((atan2 dy dx) * 180 / 3.14) - 90
                                                             newE = setRotation e $
                                                                    Just (setAngle rot angle) 
                                                         in newE : rotateTowards pt es
@@ -29,3 +29,5 @@ rotateTowardsMouse ents = do
   SDL.P (SDL.V2 x y) <- SDL.getAbsoluteMouseLocation
   return $ rotateTowards (x, y) ents
 
+rotate :: MonadIO m => ClSF m cl [Entity] [Entity]
+rotate = arrMCl rotateTowardsMouse
