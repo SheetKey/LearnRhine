@@ -195,11 +195,42 @@ An animated player
 {--------------------------------------------
 An moving player
 -}-------------------------------------------
+bullet :: SDL.Renderer -> Entity
+bullet ren = e5
+  where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0003.png"
+        e2 = setPosition e1 $ Just $ Position 0 20 32 32
+        e3 = setIsPlayer e2 False
+        e4 = setVelocity e3 $ Just (20,0)
+        e5 = setCollision e4 $ Just $ Collision (30, 30) True id
+
+spawnBullet :: Monad m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
+spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
+  case mlast of
+    Nothing -> do
+      current <- absoluteS -< ()
+      returnA -< (ents, Just current)
+    Just last -> do
+      current <- absoluteS -< ()
+      if diffTime current last >= 1
+        then returnA -< (ents ++ [bullet ren], Just current)
+        else returnA -< (ents, Just last)
+  
+
 moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
-moveAnimDraw ren = setPlayerVelocity >>> collide >>> move >>> animate >>> removeInactive >>> draw ren
+moveAnimDraw ren = setPlayerVelocity
+                   >>> collide
+                   >>> move
+                   >>> animate
+                   >>> removeInactive
+                   >>> rotate
+                   >>> draw ren
+                   >>> spawnBullet ren
 
 loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Velocity ()
-loopMove ren ents = feedback ents (startFeedbackWith >>> moveAnimDraw ren >>> endFeedback)
+loopMove ren ents = feedback ents
+                    (startFeedbackWith
+                     >>> moveAnimDraw ren
+                     >>> endFeedback)
                     >>> (render ren)
 
 loop8Help ren ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
@@ -213,7 +244,8 @@ loop8 win ren = loop8Help ren ents
         e4 = setVelocity e3 $ Just (200,0)
         e5 = setCollision e4 $ Just $ Collision (50, 50) True
              (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e))
-        ent = setSprite e5 $ Just $ Sprite 0 4 0 32 32
+        e6 = setRotation e5 $ Just $ Rotation True 0 Nothing
+        ent = setSprite e6 $ Just $ Sprite 0 4 0 32 32
 
         en1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0002.png"
         en2 = setPosition en1 $ Just $ Position 100 200 64 64
