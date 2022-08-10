@@ -49,6 +49,13 @@ checkCollision e1 e2 =
                   (modifyPosition (0.05 *^ e1V) $ setWH e1P $ hitBox e1C)
                   (modifyPosition (0.05 *^ e2V) $ setWH e2P $ hitBox e2C)
 
+deactivateEntity :: Entity -> Entity
+deactivateEntity e = case getMCollision e of
+                       Nothing -> e
+                       Just eC -> if deactivate eC
+                                  then setIsActive e False
+                                  else e
+
 collideOne :: Entity -> [Entity] -> (Entity, [Entity])
 collideOne e1 ents = (newE1, acc)
   where collideAcc :: (Entity, [Entity], [Entity]) -> (Entity, [Entity], [Entity])
@@ -58,9 +65,9 @@ collideOne e1 ents = (newE1, acc)
                                               (Nothing, _) -> error "Collision doesn't exist."
                                               (_, Nothing) -> error "Collision doesn't exist."
                                               (Just c1, Just c2) ->
-                                                collideAcc (hitOther c2 e1
+                                                collideAcc (deactivateEntity $ hitOther c2 e1
                                                            , es
-                                                           , acc ++ [hitOther c1 e])
+                                                           , acc ++ [deactivateEntity $ hitOther c1 e])
                                        else collideAcc (e1, es, acc ++ [e])
         (newE1, _, acc) = collideAcc (e1, ents, [])
 
