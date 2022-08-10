@@ -37,4 +37,4 @@ setCollisionCounter :: Collision a -> Maybe Int -> Collision a
 setCollisionCounter c f = setField @"collisionCounter" f c
 
 incCollisionCounter :: Collision a -> Collision a
-incCollisionCounter c = setCollisionCounter c $ fmap (+ 1) $ collicionCounter c
+incCollisionCounter c = setCollisionCounter c $ fmap (+ 1) $ collisionCounter c
