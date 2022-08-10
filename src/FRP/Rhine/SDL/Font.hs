@@ -1,5 +1,7 @@
 module FRP.Rhine.SDL.Font where
 
+import Control.Monad.IO.Class (MonadIO)
+import Data.Text
 import qualified SDL
 import qualified SDL.Font as SDLF
 
