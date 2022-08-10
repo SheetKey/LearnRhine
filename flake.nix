@@ -45,6 +45,7 @@
             # SLD2
             haskellPackages.sdl2
             haskellPackages.sdl2-image
+            haskellPackages.sdl2-ttf
             SDL2
             pkg-config
 

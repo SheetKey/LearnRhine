@@ -23,6 +23,7 @@ extra-source-files:
     CHANGELOG.md
     README.org
     sprites/**/*.png
+    fonts/*.ttf
 
 library 
     hs-source-dirs:   src
@@ -30,6 +31,7 @@ library
                     , FRP.Rhine.SDL.Init
                     , FRP.Rhine.SDL.Entity
                     , FRP.Rhine.SDL.Util
+                    , FRP.Rhine.SDL.Font
 
                     , FRP.Rhine.SDL.Clock
                     , FRP.Rhine.SDL.Clock.SDLClock
@@ -57,6 +59,7 @@ library
                     , vector-sized
                     , sdl2
                     , sdl2-image
+                    , sdl2-ttf
                     , time
                     , random
                     , generic-lens
