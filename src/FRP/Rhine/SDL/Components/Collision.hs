@@ -15,7 +15,7 @@ import Data.Generics.Product.Fields
 data Collision a = Collision
   { hitBox :: (Width, Height)    -- ^ The width and height of the hitbox. 
   , canHit :: Bool               -- ^ Whether or not an entity can colide. 
-  , hitOther :: a -> a -- ^ What this entity does to the entity it collides with.
+  , hitOther :: a -> a           -- ^ What this entity does to the entity it collides with.
   }
   deriving (Generic)
 
