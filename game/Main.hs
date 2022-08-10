@@ -200,8 +200,8 @@ bullet ren = e5
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0003.png"
         e2 = setPosition e1 $ Just $ Position 0 20 32 32
         e3 = setIsPlayer e2 False
-        e4 = setVelocity e3 $ Just (20,0)
-        e5 = setCollision e4 $ Just $ Collision (30, 30) True id
+        e4 = setVelocity e3 $ Just (90,0)
+        e5 = setCollision e4 $ Just $ Collision (30, 30) True id True Nothing
 
 spawnBullet :: Monad m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
 spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
@@ -242,8 +242,8 @@ loop8 win ren = loop8Help ren ents
         e2 = setPosition e1 $ Just $ Position 100 100 64 64
         e3 = setIsPlayer e2 True
         e4 = setVelocity e3 $ Just (200,0)
-        e5 = setCollision e4 $ Just $ Collision (50, 50) True
-             (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e))
+        e5 = setCollision e4 $ Just $ Collision (50, 50) True 
+             (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
         e6 = setRotation e5 $ Just $ Rotation True 0 Nothing
         ent = setSprite e6 $ Just $ Sprite 0 4 0 32 32
 
@@ -251,7 +251,7 @@ loop8 win ren = loop8Help ren ents
         en2 = setPosition en1 $ Just $ Position 100 200 64 64
         en3 = setSprite en2 $ Just $ Sprite 0 4 0 32 32
         en4 = setCollision en3 $ Just $ Collision (50, 50) True
-              (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e))
+              (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
         ents = [ent, en4]
 
 main8 = sdlInitAndFlow loop8
