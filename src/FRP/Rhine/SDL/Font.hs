@@ -1,19 +1,25 @@
 module FRP.Rhine.SDL.Font where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Exception (bracket)
 import Data.Text
 import qualified SDL
 import qualified SDL.Font as SDLF
 
 
+handle = (\e -> do
+             let str = show (e :: SDL.SDLException)
+             putStrLn str
+             exitFailure)
+
 loadFont :: MonadIO m
-         -> FilePath
+         => FilePath
          -> SDLF.PointSize
          -> SDLF.Color
          -> Text
          -> m SDL.Surface
 loadFont path size color text =
-  bracket (SDLF.load path size) SDLF.free $
+  liftIO . bracket (SDLF.load path size) SDLF.free $
   \f -> SDLF.blended f color text
 
 loadFontTexture :: MonadIO m
@@ -24,5 +30,6 @@ loadFontTexture :: MonadIO m
                 -> Text
                 -> m SDL.Texture
 loadFontTexture r path size color text =
-  bracket (loadFont path size color text) SDL.freeSurface $
+  liftIO . bracket (loadFont path size color text) SDL.freeSurface $
   SDL.createTextureFromSurface r
+  
