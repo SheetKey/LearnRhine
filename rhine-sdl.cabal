@@ -83,7 +83,6 @@ executable Game
                     , random
                     , generic-lens
                     , text
-                    , bytestring
     hs-source-dirs:   game
     default-language: Haskell2010
 
