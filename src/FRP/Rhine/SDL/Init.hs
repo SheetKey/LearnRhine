@@ -8,6 +8,8 @@ module FRP.Rhine.SDL.Init where
 
 import FRP.Rhine
 import qualified SDL
+import qualified SDL.Image as SDLI
+import qualified SDL.Font as SDLF
 
 import FRP.Rhine.SDL.Entity
 import Data.Void
@@ -16,6 +18,8 @@ sdlInitAndFlow :: (Clock IO cl, GetClockProxy cl, Time cl ~ Time (In cl), Time c
                => (SDL.Window -> SDL.Renderer -> Rhine IO cl () ()) -> IO ()
 sdlInitAndFlow rhine = do
   SDL.initializeAll
+  SDLI.initialize [ SDLI.InitPNG ]
+  SDLF.initialize
   window <- SDL.createWindow "Test" SDL.defaultWindow
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   flow $ rhine window renderer
