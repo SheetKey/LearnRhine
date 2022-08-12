@@ -6,6 +6,7 @@ module FRP.Rhine.SDL
 import FRP.Rhine.SDL.Init                as X
 import FRP.Rhine.SDL.Entity              as X
 import FRP.Rhine.SDL.Util                as X
+import FRP.Rhine.SDL.Font                as X
 
 import FRP.Rhine.SDL.Clock               as X
 
