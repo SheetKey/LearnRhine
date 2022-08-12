@@ -14,13 +14,26 @@ import qualified SDL.Font as SDLF
 import FRP.Rhine.SDL.Entity
 import Data.Void
 
+myDefaultWindow :: SDL.WindowConfig
+myDefaultWindow = SDL.WindowConfig
+  { SDL.windowBorder          = True
+  , SDL.windowHighDPI         = False
+  , SDL.windowInputGrabbed    = False
+  , SDL.windowMode            = SDL.FullscreenDesktop
+  , SDL.windowGraphicsContext = SDL.NoGraphicsContext
+  , SDL.windowPosition        = SDL.Wherever
+  , SDL.windowResizable       = False
+  , SDL.windowInitialSize     = SDL.V2 800 600
+  , SDL.windowVisible         = True
+  }
+
 sdlInitAndFlow :: (Clock IO cl, GetClockProxy cl, Time cl ~ Time (In cl), Time cl ~ Time (Out cl))
                => (SDL.Window -> SDL.Renderer -> Rhine IO cl () ()) -> IO ()
 sdlInitAndFlow rhine = do
   SDL.initializeAll
   SDLI.initialize [ SDLI.InitPNG ]
   SDLF.initialize
-  window <- SDL.createWindow "Test" SDL.defaultWindow
+  window <- SDL.createWindow "Test" myDefaultWindow
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   flow $ rhine window renderer
 
