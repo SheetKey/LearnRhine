@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
@@ -9,7 +11,7 @@ import FRP.Rhine.ClSF.Except
 
 import FRP.Rhine.SDL
  
-
+import Control.Exception (bracket, catch)
 import System.Exit (exitSuccess, exitFailure)
 import Control.Monad.Schedule
 import Control.Concurrent
@@ -19,7 +21,9 @@ import Data.Word
 import qualified Data.Vector.Sized as V
 
 import qualified SDL
+import qualified SDL.Internal.Exception as SDL
 import qualified SDL.Image as SDLI
+import qualified SDL.Font as SDLF
 
 import Foreign.C.Types
 
@@ -203,6 +207,16 @@ bullet ren = e5
         e4 = setVelocity e3 $ Just (90,0)
         e5 = setCollision e4 $ Just $ Collision (30, 30) True id True Nothing
 
+myText :: SDL.Renderer -> Entity
+myText ren = e2
+  where e1 = setTexture defaultEntity $ Just $
+             loadFontTexture ren
+                             "fonts/Berry_Rotunda.ttf"
+                             70
+                             (SDL.V4 128 128 128 100)
+                             "Test"
+        e2 = setPosition e1 $ Just $ Position 0 0 100 100
+
 spawnBullet :: Monad m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
 spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
   case mlast of
@@ -224,7 +238,7 @@ moveAnimDraw ren = setPlayerVelocity
                    >>> removeInactive
                    >>> rotate
                    >>> draw ren
-                   >>> spawnBullet ren
+                   -- >>> spawnBullet ren
 
 loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Velocity ()
 loopMove ren ents = feedback ents
@@ -252,6 +266,7 @@ loop8 win ren = loop8Help ren ents
         en3 = setSprite en2 $ Just $ Sprite 0 4 0 32 32
         en4 = setCollision en3 $ Just $ Collision (50, 50) True
               (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
-        ents = [ent, en4]
+        textEnt = myText ren
+        ents = [ent, en4, textEnt]
 
 main8 = sdlInitAndFlow loop8
