@@ -7,11 +7,6 @@ import qualified SDL
 import qualified SDL.Font as SDLF
 
 
-handle = (\e -> do
-             let str = show (e :: SDL.SDLException)
-             putStrLn str
-             exitFailure)
-
 loadFont :: MonadIO m
          => FilePath
          -> SDLF.PointSize
