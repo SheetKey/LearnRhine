@@ -229,27 +229,33 @@ spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
         else returnA -< (ents, Just last)
   
 
-moveAnimDraw :: MonadIO m => SDL.Renderer -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
-moveAnimDraw ren = setPlayerVelocity
+moveAnimDraw :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
+moveAnimDraw ren (SDL.V2 w h) = setPlayerVelocity
                    >>> collide
                    >>> move
                    >>> animate
                    >>> removeInactive
                    >>> rotate
-                   >>> draw ren
+                   >>> draw ren (Position 0 0 w h)
                    -- >>> spawnBullet ren
 
-loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> ClSF m FPS60 Velocity ()
-loopMove ren ents = feedback ents
+loopMove :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> [Entity] -> ClSF m FPS60 Velocity ()
+loopMove ren wandh ents = feedback ents
                     (startFeedbackWith
-                     >>> moveAnimDraw ren
+                     >>> moveAnimDraw ren wandh
                      >>> endFeedback)
                     >>> (render ren)
 
-loop8Help ren ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
-                     --> loopMove ren ents @@ waitClock
+loopMoveExcept :: MonadIO m => SDL.Renderer -> IO (SDL.V2 CInt) -> [Entity]
+               -> ClSFExcept m FPS60 Velocity () Void
+loopMoveExcept ren wandhIO ents = do
+  wandh <- once_ $ liftIO wandhIO
+  safe $ loopMove ren wandh ents
 
-loop8 win ren = loop8Help ren ents
+loop8Help ren wandhIO ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
+                     --> safely (loopMoveExcept ren wandhIO ents) @@ waitClock
+
+loop8 win ren = loop8Help ren wandhIO ents
                 --  ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
         e2 = setPosition e1 $ Just $ Position 100 100 64 64
@@ -267,5 +273,7 @@ loop8 win ren = loop8Help ren ents
               (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
         textEnt = myText ren
         ents = [ent, en4, textEnt]
+        wandhIO :: IO (SDL.V2 CInt)
+        wandhIO = SDL.get $ SDL.windowSize win
 
 main8 = sdlInitAndFlow loop8
