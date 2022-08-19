@@ -201,7 +201,7 @@ An moving player
 bullet :: SDL.Renderer -> Entity
 bullet ren = e5
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0003.png"
-        e2 = setPosition e1 $ Just $ Position 0 20 32 32
+        e2 = setPosition e1 $ Just $ RenderPosition (Position 0 20 32 32) (Position 0 20 32 32)
         e3 = setIsPlayer e2 False
         e4 = setVelocity e3 $ Just (90,0)
         e5 = setCollision e4 $ Just $ Collision (30, 30) True id True Nothing
@@ -214,7 +214,7 @@ myText ren = e2
                              70
                              (SDL.V4 128 128 128 100)
                              "Test"
-        e2 = setPosition e1 $ Just $ Position 0 0 100 100
+        e2 = setPosition e1 $ Just $ RenderPosition (Position 0 0 100 100) (Position 0 0 100 100)
 
 spawnBullet :: Monad m => SDL.Renderer -> ClSF m FPS60 [Entity] [Entity]
 spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
@@ -232,11 +232,11 @@ spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
 moveAnimDraw :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
 moveAnimDraw ren (SDL.V2 w h) = setPlayerVelocity
                    >>> collide
-                   >>> move
+                   >>> move (Position 0 0 w h)
                    >>> animate
                    >>> removeInactive
                    >>> rotate
-                   >>> draw ren (Position 0 0 w h)
+                   >>> draw ren 
                    -- >>> spawnBullet ren
 
 loopMove :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> [Entity] -> ClSF m FPS60 Velocity ()
@@ -258,7 +258,7 @@ loop8Help ren wandhIO ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrent
 loop8 win ren = loop8Help ren wandhIO ents
                 --  ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
-        e2 = setPosition e1 $ Just $ Position 100 100 64 64
+        e2 = setPosition e1 $ Just $ RenderPosition (Position 100 100 64 64) (Position 100 100 64 64)
         e3 = setIsPlayer e2 True
         e4 = setVelocity e3 $ Just (200,0)
         e5 = setCollision e4 $ Just $ Collision (50, 50) True 
@@ -267,7 +267,7 @@ loop8 win ren = loop8Help ren wandhIO ents
         ent = setSprite e6 $ Just $ Sprite 0 4 0 32 32
 
         en1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0002.png"
-        en2 = setPosition en1 $ Just $ Position 100 200 64 64
+        en2 = setPosition en1 $ Just $ RenderPosition (Position 100 200 64 64) (Position 100 200 64 64)
         en3 = setSprite en2 $ Just $ Sprite 0 4 0 32 32
         en4 = setCollision en3 $ Just $ Collision (50, 50) True
               (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
