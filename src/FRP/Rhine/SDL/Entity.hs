@@ -29,6 +29,8 @@ module FRP.Rhine.SDL.Entity
   , setVelocity
   , setCollision
   , setRotation
+  , setRelPos
+  , setDestPos
   ) where
 
 import FRP.Rhine
@@ -46,7 +48,7 @@ data Entity = Entity
   { isActive :: Bool                          -- ^ An entity either is or is not active.
   , isPlayer :: Bool                          -- ^ An entity either is or is not the player.
   , getMTexture :: Maybe (IO SDL.Texture)     -- ^ An entity might have a texture.
-  , getMPosition :: Maybe Position            -- ^ An entity might have a position.
+  , getMPosition :: Maybe RenderPosition      -- ^ An entity might have a position and destination.
   , getMSprite :: Maybe Sprite                -- ^ An entity might have a sprite (animation).
   , getMVelocity :: Maybe Velocity            -- ^ An entity might have a velocity. 
   , getMCollision :: Maybe (Collision Entity) -- ^ An entity might be able to collide.
@@ -79,9 +81,17 @@ setIsPlayer ent val = setField @"isPlayer" val ent
 setTexture :: Entity -> Maybe (IO SDL.Texture) -> Entity
 setTexture ent val = setField @"getMTexture" val ent
 
--- | Set the position.
-setPosition :: Entity -> Maybe Position -> Entity
+-- | Set the render position.
+setPosition :: Entity -> Maybe RenderPosition -> Entity
 setPosition ent val = setField @"getMPosition" val ent
+
+-- | Set the relative position.
+setRelPos :: Entity -> Position -> Entity
+setRelPos ent val = setPosition ent $ fmap (flip setRenderPos val) (getMPosition ent)
+
+-- | Set the destination position.
+setDestPos :: Entity -> Position -> Entity
+setDestPos ent val = setPosition ent $ fmap (flip setRenderDest val) (getMPosition ent)
 
 -- | Set the sprite.
 setSprite :: Entity -> Maybe Sprite -> Entity
