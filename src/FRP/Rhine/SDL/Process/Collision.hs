@@ -16,7 +16,7 @@ doCollision (Position x1 y1 w1 h1) (Position x2 y2 w2 h2) =
 
 checkCollision :: Entity -> Entity -> Bool
 checkCollision e1 e2 =
-  case (getMPosition e1, getMPosition e2) of
+  case (getPosition <$> getMPosition e1, getPosition <$> getMPosition e2) of
     (Nothing, _) -> False
     (_, Nothing) -> False
     (Just e1P, Just e2P) ->
