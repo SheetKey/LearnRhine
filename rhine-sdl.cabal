@@ -64,6 +64,7 @@ library
                     , random
                     , generic-lens
                     , text
+                    , stm
     default-language: Haskell2010
 
 
@@ -83,6 +84,7 @@ executable Game
                     , random
                     , generic-lens
                     , text
+                    , stm
     hs-source-dirs:   game
     default-language: Haskell2010
 

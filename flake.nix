@@ -54,6 +54,9 @@
 
             # Generic lens
             haskellPackages.generic-lens
+
+            # STM
+            haskellPackages.stm_2_5_1_0
           ];
           inputsFrom = builtins.attrValues self.packages.${system};
         };
