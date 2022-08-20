@@ -58,7 +58,7 @@ data Position = Position XPos YPos Width Height
 -- | An entity will have a relative position and a destination dictated by the camera.
 data RenderPosition = RenderPosition
   { getPosition :: Position
-  , getDestination :: Position
+  , getDestination :: Maybe Position
   }
   deriving (Generic)
 
@@ -67,7 +67,7 @@ setRenderPos :: RenderPosition -> Position -> RenderPosition
 setRenderPos rpos val = setField @"getPosition" val rpos
 
 -- | Set the destination position.
-setRenderDest :: RenderPosition -> Position -> RenderPosition
+setRenderDest :: RenderPosition -> Maybe Position -> RenderPosition
 setRenderDest rpos val = setField @"getDestination" val rpos
 
 -- | A point is a tuple of 'Double's. This has an instance in the 'VectorSpace' typeclass.
@@ -87,7 +87,7 @@ modifyRelPos pt rpos = setRenderPos rpos $ modifyPosition pt (getPosition rpos)
 
 -- | Modify the destination position.
 modifyDestPos :: Point -> RenderPosition -> RenderPosition
-modifyDestPos pt rpos = setRenderDest rpos $ modifyPosition pt (getDestination rpos)
+modifyDestPos pt rpos = setRenderDest rpos $ (modifyPosition pt) <$> (getDestination rpos)
 
 -- | Sets the new position with a new point.
 setFromPoint :: Point -> Position -> Position
