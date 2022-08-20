@@ -90,7 +90,7 @@ setRelPos :: Entity -> Position -> Entity
 setRelPos ent val = setPosition ent $ fmap (flip setRenderPos val) (getMPosition ent)
 
 -- | Set the destination position.
-setDestPos :: Entity -> Position -> Entity
+setDestPos :: Entity -> Maybe Position -> Entity
 setDestPos ent val = setPosition ent $ fmap (flip setRenderDest val) (getMPosition ent)
 
 -- | Set the sprite.
