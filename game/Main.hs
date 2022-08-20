@@ -28,6 +28,9 @@ import Foreign.C.Types
 
 import System.Random
 
+import Control.Monad.STM
+import Control.Concurrent.STM.TVar
+
 main :: IO ()
 main = main8
 
@@ -229,28 +232,29 @@ spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
         else returnA -< (ents, Just last)
   
 
-moveAnimDraw :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
-moveAnimDraw ren (SDL.V2 w h) = setPlayerVelocity
+moveAnimDraw :: MonadIO m => SDL.Renderer -> Camera -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
+moveAnimDraw ren c = setPlayerVelocity
                    >>> collide
-                   >>> move (Position 0 0 w h)
+                   >>> move c
                    >>> animate
                    >>> removeInactive
                    >>> rotate
                    >>> draw ren 
                    -- >>> spawnBullet ren
 
-loopMove :: MonadIO m => SDL.Renderer -> SDL.V2 CInt -> [Entity] -> ClSF m FPS60 Velocity ()
-loopMove ren wandh ents = feedback ents
+loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> Camera -> ClSF m FPS60 Velocity ()
+loopMove ren ents c = feedback ents
                     (startFeedbackWith
-                     >>> moveAnimDraw ren wandh
+                     >>> moveAnimDraw ren c
                      >>> endFeedback)
                     >>> (render ren)
 
 loopMoveExcept :: MonadIO m => SDL.Renderer -> IO (SDL.V2 CInt) -> [Entity]
                -> ClSFExcept m FPS60 Velocity () Void
 loopMoveExcept ren wandhIO ents = do
-  wandh <- once_ $ liftIO wandhIO
-  safe $ loopMove ren wandh ents
+  (SDL.V2 w h) <- once_ $ liftIO wandhIO
+  c <- once_ $ liftIO . newTVarIO $ Position 0 0 w h
+  safe $ loopMove ren ents c
 
 loop8Help ren wandhIO ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
                      --> safely (loopMoveExcept ren wandhIO ents) @@ waitClock
