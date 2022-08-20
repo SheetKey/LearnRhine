@@ -68,4 +68,3 @@ drawHelper ren lst = sequence $ fmap (drawSprite ren) lst
 draw :: MonadIO m => SDL.Renderer -> ClSF m cl [Entity] [Entity]
 draw ren = arrMCl (drawHelper ren)
 
--- TODO: Account for camera in rotation.
