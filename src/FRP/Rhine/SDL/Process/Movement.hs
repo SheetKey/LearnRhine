@@ -12,6 +12,9 @@ import qualified SDL
 import FRP.Rhine.SDL.Entity
 import FRP.Rhine.SDL.Components
 
+import Control.Monad.STM
+import Control.Concurrent.STM.TVar
+
 
 --playerPos :: Point -> Entity -> Entity
 --playerPos pt e = if isPlayer e 
@@ -46,42 +49,51 @@ updateRelPos t e = case getMVelocity e of
                      Just vel -> setPosition e $ fmap (modifyRelPos (t *^ vel)) (getMPosition e)
                      --setPosition e $ fmap (modifyPosition (t *^ vel)) (getMPosition e)
 
-type Camera = Position
+type CameraPosition = Position
+type Camera = TVar CameraPosition
 
-mkCamera :: ([Entity], Camera) -> Camera
-mkCamera ([], c) = c
-mkCamera (e:es, c@(Position cx cy cw ch)) =
+updateCamera :: ([Entity], Camera) -> STM ()
+updateCamera ([], c) = return ()
+updateCamera (e:es, c) =
   if isPlayer e
   then case getMPosition e of
-         Nothing -> c
+         Nothing -> return ()
          Just (RenderPosition (Position px py _ _) _)
-           -> Position (px - (cw `div` 2)) (py - (ch `div` 2)) cw ch
-  else mkCamera (es, c)
+           -> do (Position cx cy cw ch) <- readTVar c
+                 writeTVar c $ Position (px - (cw `div` 2)) (py - (ch `div` 2)) cw ch
+  else updateCamera (es, c)
                       
-cameraBounds :: Camera -> Camera
-cameraBounds (Position x y w h) = Position nx ny w h
+getCameraBounds :: CameraPosition -> CameraPosition
+getCameraBounds (Position x y w h) = Position nx ny w h
   where nx = if x < 0 then 0 else if x > w then w else x
         ny = if y < 0 then 0 else if y > h then h else y
 
-updateDest :: Camera -> RenderPosition -> RenderPosition
+cameraBounds :: Camera -> STM ()
+cameraBounds c = modifyTVar c getCameraBounds
+
+updateDest :: CameraPosition -> RenderPosition -> RenderPosition
 updateDest (Position cx cy _ _) rpos@(RenderPosition (Position x y w h) _)
   = setRenderDest rpos $ Position (x - cx) (y - cy) w h
 
-updateDestPos :: Camera -> Entity -> Entity
+updateDestPos :: CameraPosition -> Entity -> Entity
 updateDestPos c e = setPosition e $ fmap (updateDest c) (getMPosition e)
 
-updateAllDest :: ([Entity], Camera) -> [Entity]
+updateAllDest :: ([Entity], CameraPosition) -> [Entity]
 updateAllDest (ents, c) = fmap (updateDestPos c) ents
 
-move :: (Monad m, Diff (Time cl) ~ Double) => Camera -> ClSF m cl [Entity] [Entity]
-move c = feedback c $ proc (ents, c) -> do
+move :: (MonadIO m, Diff (Time cl) ~ Double) => Camera -> ClSF m cl [Entity] [Entity]
+move c = proc ents -> do
   _sinceLast <- sinceLastS -< ()
 
   nents <- arr id -< fmap (updateRelPos _sinceLast) ents
 
-  nc <- arr mkCamera -< (nents, c)
-  nnc <- arr cameraBounds -< nc
+  --nc <- arr mkCamera -< (nents, c)
+  --nnc <- arr cameraBounds -< nc
+  cPos <- arrMCl (liftIO . atomically) -< (do updateCamera (nents, c)
+                                              cameraBounds c
+                                              readTVar c
+                                          )
 
-  nnents <- arr updateAllDest -< (nents, nnc)
+  nnents <- arr updateAllDest -< (nents, cPos)
 
-  returnA -< (nnents, nnc)
+  returnA -< nnents
