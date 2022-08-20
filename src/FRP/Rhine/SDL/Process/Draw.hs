@@ -35,23 +35,24 @@ import qualified SDL
 
 drawRect :: MonadIO m => SDL.Renderer -> Entity -> Maybe Rectangle -> m Entity
 drawRect ren ent rect =
-  case (getMTexture ent, getMRotation ent) of
-    (Nothing, _) -> liftIO $ return ent
-    (Just iotex, Nothing) -> liftIO $ do
+  case (getMTexture ent, getMRotation ent, getDestination <$> getMPosition ent) of
+    (Nothing, _, _) -> liftIO $ return ent
+    (_, _, Just Nothing) -> liftIO $ return ent
+    (Just iotex, Nothing, _) -> liftIO $ do
       tex <- iotex
       SDL.copy
         ren
         tex
         rect
-        (fmap mkRectangle $ fmap getDestination $ getMPosition ent)
+        (fmap mkRectangle $ getDestination =<< getMPosition ent)
       return ent
-    (Just iotex, Just rot) -> liftIO $ do
+    (Just iotex, Just rot, _) -> liftIO $ do
       tex <- iotex
       SDL.copyEx
         ren
         tex
         rect
-        (fmap mkRectangle $ fmap getDestination $ getMPosition ent)
+        (fmap mkRectangle $ getDestination =<< getMPosition ent)
         (angle rot)
         (rotPoint rot)
         (SDL.V2 False False)
