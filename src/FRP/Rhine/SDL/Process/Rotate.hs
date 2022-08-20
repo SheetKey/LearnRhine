@@ -14,7 +14,7 @@ rotateTowards pt@(x, y) (e:es) =
   case getMRotation e of
     Nothing  -> e : rotateTowards pt es
     Just rot -> if towardsMouse rot
-                then case getDestination <$> getMPosition e of
+                then case getDestination =<< getMPosition e of
                        Nothing -> e : rotateTowards pt es
                        Just (Position xP yP w h) ->
                          let dx = fromIntegral (xP - x) + ((fromIntegral w) / 2)
