@@ -30,10 +30,27 @@
         "type": "github"
       }
     },
+    "rhine-unstable": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1660034533,
+        "narHash": "sha256-94wpXEy+JPags2YEbt9TKgAlWhYOF+rSLey5OnnsY6o=",
+        "owner": "turion",
+        "repo": "rhine",
+        "rev": "63abc286e55e14431ddbb6c2aca445dfa87b2c54",
+        "type": "github"
+      },
+      "original": {
+        "owner": "turion",
+        "repo": "rhine",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "rhine-unstable": "rhine-unstable"
       }
     }
   },
