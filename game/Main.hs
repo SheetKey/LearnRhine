@@ -280,3 +280,7 @@ loop8 win ren = loop8Help ren wandhIO ents
         wandhIO = SDL.get $ SDL.windowSize win
 
 main8 = sdlInitAndFlow loop8
+
+
+test :: SN IO (SequentialClock IO FPS60 Busy) () ()
+test = Feedback (keepLast 0) (Sequential (Synchronous startFeedback) (keepLast 0) (Synchronous endFeedback))
