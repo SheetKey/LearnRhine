@@ -232,9 +232,8 @@ spawnBullet ren = feedback Nothing $ proc (ents, mlast) ->
         else returnA -< (ents, Just last)
   
 
-moveAnimDraw :: MonadIO m => SDL.Renderer -> Camera -> ClSF m FPS60 (Velocity, [Entity]) [Entity]
-moveAnimDraw ren c = setPlayerVelocity
-                   >>> collide
+moveAnimDraw :: MonadIO m => SDL.Renderer -> Camera -> ClSF m FPS60 [Entity] [Entity]
+moveAnimDraw ren c = collide
                    >>> move c
                    >>> animate
                    >>> removeInactive
@@ -242,24 +241,27 @@ moveAnimDraw ren c = setPlayerVelocity
                    >>> draw ren
                    -- >>> spawnBullet ren
 
-loopMove :: MonadIO m => SDL.Renderer -> [Entity] -> Camera -> ClSF m FPS60 Velocity ()
-loopMove ren ents c = feedback ents
-                    (startFeedbackWith
-                     >>> moveAnimDraw ren c
-                     >>> endFeedback)
-                    >>> (render ren)
 
-loopMoveExcept :: MonadIO m => SDL.Renderer -> IO (SDL.V2 CInt) -> [Entity]
-               -> ClSFExcept m FPS60 Velocity () Void
-loopMoveExcept ren wandhIO ents = do
+loopMoveExcept :: MonadIO m => SDL.Renderer -> IO (SDL.V2 CInt)
+               -> ClSFExcept m FPS60 [Entity] [Entity] Void
+loopMoveExcept ren wandhIO = do
   (SDL.V2 w h) <- once_ $ liftIO wandhIO
-  safe $ loopMove ren ents $ Position 0 0 w h
+  safe $ moveAnimDraw ren $ Position 0 0 w h
 
-loop8Help ren wandhIO ents = getPlayerVelocity >-- keepLast (0,0) -@- concurrently
-                     --> safely (loopMoveExcept ren wandhIO ents) @@ waitClock
+loop8Help :: SDL.Renderer -> IO (SDL.V2 CInt) -> [Entity]
+          -> Rhine IO (SequentialClock IO
+                        (SequentialClock IO
+                         (SequentialClock IO FPS60 (SequentialClock IO SDLClock Busy))
+                         FPS60
+                        )
+                        FPS60
+                      )
+             [Entity] [Entity]
+loop8Help ren wandhIO ents = playerVelocity ents waitClock waitClock >-- keepLast ents -@- concurrently
+                     --> safely (loopMoveExcept ren wandhIO) @@ waitClock
 
-loop8 win ren = loop8Help ren wandhIO ents
-                --  ||@ concurrently @|| sdlQuitAllRh SDL.KeycodeQ win
+loop8Loop ren wandhIO = feedbackRhine (keepLast ents) $
+                        startFeedback ^->@ (loop8Help ren wandhIO ents) @>-^ endFeedback
   where e1 = setTexture defaultEntity $ Just $ SDLI.loadTexture ren "sprites/Sprite-0001.png"
         e2 = setPosition e1 $ Just $ RenderPosition (Position 100 100 64 64) (Just $ Position 100 100 64 64)
         e3 = setIsPlayer e2 True
@@ -276,11 +278,10 @@ loop8 win ren = loop8Help ren wandhIO ents
               (\e -> setVelocity e $ ((0) *^) <$> (getMVelocity e)) False Nothing
         textEnt = myText ren
         ents = [ent, en4, textEnt]
-        wandhIO :: IO (SDL.V2 CInt)
+
+loop8 win ren = loop8Loop ren wandhIO ||@ concurrently @|| render ren @@ waitClock
+  where wandhIO :: IO (SDL.V2 CInt)
         wandhIO = SDL.get $ SDL.windowSize win
 
 main8 = sdlInitAndFlow loop8
 
-
-test :: SN IO (SequentialClock IO FPS60 Busy) () ()
-test = Feedback (keepLast 0) (Sequential (Synchronous startFeedback) (keepLast 0) (Synchronous endFeedback))
