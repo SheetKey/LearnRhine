@@ -46,9 +46,9 @@ processInput = feedback (0,0) $ proc (mevent, vel@(x,y)) ->
                                             _ -> returnA -< (vel, vel)
                                         _ -> returnA -< (vel, vel)
 
-getPlayerVelocity :: Rhine IO (SequentialClock IO SDLClock Busy) ((), [Entity]) (Velocity, [Entity])
-getPlayerVelocity = first pollEvent @@ SDLClock
-           >-- (fifoUnbounded *-* keepLast []) -@- concurrently -->
+getPlayerVelocity :: [Entity] -> Rhine IO (SequentialClock IO SDLClock Busy) ((), [Entity]) (Velocity, [Entity])
+getPlayerVelocity init = first pollEvent @@ SDLClock
+           >-- (fifoUnbounded *-* keepLast init) -@- concurrently -->
            (first processInput >>> first (arr normalizeSafe) >>> first (arr (200 *^))) @@ Busy
 
 
@@ -63,11 +63,11 @@ setPlayerVelocity = proc (vel, ents) -> do
   returnA -< nents
 
 velocityIn :: (cl ~ In cl, cl ~ Out cl, Time cl ~ UTCTime, Clock IO cl, GetClockProxy cl)
-           => cl -> Rhine IO (SequentialClock IO cl (SequentialClock IO SDLClock Busy)) [Entity] (Velocity, [Entity])
-velocityIn clockIn = endFeedback @@ clockIn >-- keepLast ((), []) -@- concurrently --> getPlayerVelocity
+           => [Entity] -> cl -> Rhine IO (SequentialClock IO cl (SequentialClock IO SDLClock Busy)) [Entity] (Velocity, [Entity])
+velocityIn init clockIn = endFeedback @@ clockIn >-- keepLast ((), init) -@- concurrently --> getPlayerVelocity init
 
 playerVelocity :: (clL ~ In clL, clL ~ Out clL, clR ~ In clR, clR ~ Out clR, Time clL ~ Time clR, Time clR ~ UTCTime, Clock IO clL, Clock IO clR, GetClockProxy clL, GetClockProxy clR)
-               => clL -> clR 
+               => [Entity] -> clL -> clR 
                -> Rhine IO
                   (SequentialClock IO
                     (SequentialClock IO clL (SequentialClock IO SDLClock Busy))
@@ -75,5 +75,5 @@ playerVelocity :: (clL ~ In clL, clL ~ Out clL, clR ~ In clR, clR ~ Out clR, Tim
                   )
                   [Entity]
                   [Entity]
-playerVelocity clL clR = velocityIn clL >-- keepLast ((0,0), []) -@- concurrently --> setPlayerVelocity @@ clR
+playerVelocity init clL clR = velocityIn init clL >-- keepLast ((0,0), init) -@- concurrently --> setPlayerVelocity @@ clR
 
