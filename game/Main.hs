@@ -3,10 +3,26 @@
 {-# LANGUAGE Arrows #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GADTs #-}
+--{-# LANGUAGE RankNTypes #-}
+--{-# LANGUAGE TypeApplications #-}
+--{-# LANGUAGE PolyKinds #-}
+
 module Main where
 
-import FRP.Rhine
+-- Nat type
+import GHC.TypeLits
+import Data.Proxy
+
+import FRP.Rhine hiding (readerS)
 import FRP.Rhine.ClSF.Except 
+import Data.MonadicStreamFunction.InternalCore (MSF (..))
+import Control.Monad.Trans.MSF.Reader (readerS)
 
 import FRP.Rhine.SDL
  
@@ -285,3 +301,33 @@ loop8 win ren = loop8Loop ren wandhIO ||@ concurrently @|| render ren @@ waitClo
 
 main8 = sdlInitAndFlow loop8
 
+------------------------------
+--type ClSFDelay m (delay :: Nat) cl a b = KnownNat delay => ClSF m cl a b
+
+data Throughput m cl a (delay :: Nat) = KnownNat delay => Throughput (MSF m a a)
+  
+eraseThroughput :: (Monad m, Diff (Time cl) ~ Double) => Throughput m cl a delay -> ClSF m cl a a
+eraseThroughput t@(Throughput msfT) =
+  readerS $ feedback (0 :: Double) $
+  MSF (\((timeInfoCl :: TimeInfo cl, a), acc :: Diff (Time cl)) ->
+          let acc' = acc + sinceLast timeInfoCl
+          in if round acc' <= natVal t
+             then return ((a, acc'), msf)
+             else do ((a', _), msf') <- (unMSF msf) ((timeInfoCl, a), acc)
+                     return ((a', 0), msf')
+      )
+  where msf = first $ (arr (\(_, a) -> a)) >>> msfT
+
+data TN m cl a (delay :: Nat) where
+  Synchronous :: KnownNat delay => Throughput m cl a delay -> TN m cl a delay
+
+--expect :: (Monad m, Num (Diff (Time cl)), RealFrac (Diff (Time cl)))
+--       => MSF m ((TimeInfo cl, a), Diff (Time cl)) (a, Diff (Time cl))
+--       -> ((TimeInfo cl, a), Diff (Time cl))
+--       -> m ((a, Diff (Time cl)), MSF m ((TimeInfo cl, a), Diff (Time cl)) (a, Diff (Time cl)))
+--expect msf = \((timeInfoCl :: TimeInfo cl, a), acc :: Diff (Time cl)) ->
+--           let acc' = acc + sinceLast timeInfoCl
+--           in if round acc' <= 500 -- should be natVal t
+--           then return ((a, acc'), msf)
+--           else do ((a', newDiff), msf') <- (unMSF msf) ((timeInfoCl, a), acc)
+--                   return ((a', 0), msf')
