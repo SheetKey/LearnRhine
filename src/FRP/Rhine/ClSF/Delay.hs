@@ -10,6 +10,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DefaultSignatures #-}
 
+{-# LANGUAGE TypeFamilyDependencies #-}
+
 module FRP.Rhine.ClSF.Delay where
 
 import FRP.Rhine
@@ -17,11 +19,24 @@ import Control.Monad.Trans.Reader
 
 import GHC.TypeLits
 
+import Data.Functor.Identity
+
 import Data.Kind (Type)
 
 --import Data.Proxy
 
+-- TRY: Change this type to 'a -> b' but insist type is 'a -> a' in 'eraseDelay'
 type ClSFDelay m cl delay a = ClSF (ReaderT (DelayInfo delay) m) cl a a
+
+type ClSFDelayTest3 m cl delay a b = ClSF (ReaderT (DelayInfo delay) m) cl a (Either a b)
+
+type family ClSFDelayTest (m :: * -> *) cl delay (f :: * -> *) a = r | r -> f a where
+  ClSFDelayTest m cl delay (Either b) a = ClSF (ReaderT (DelayInfo delay) m) cl a (Either b a)
+  ClSFDelayTest m cl delay Identity a = ClSF (ReaderT (DelayInfo delay) m) cl a (Identity a)
+
+type family ClSFDelayTest2 (m :: * -> *) cl delay a = r | r -> a where
+  ClSFDelayTest2 m cl delay (Either b a) = ClSF (ReaderT (DelayInfo delay) m) cl a (Either b a)
+  ClSFDelayTest2 m cl delay a = ClSF (ReaderT (DelayInfo delay) m) cl (Identity a) (Identity a)
 
 
 -- TODO: Move to new file
@@ -63,8 +78,6 @@ eraseDelay DRhine {..} = proc a -> do
   delayInfo <- liftTransS (initDelay delay) -< ()
   eraseDelayDSN dsn -< (delayInfo, a)
 
--- TODO: Won't type check with manual type signatures. WHAT???
-
 eraseDelayDSN :: (Monad m, Delay m delay, GetDelayProxy delay) => DSN m cl delay a -> ClSF m cl (DelayInfo delay, a) a
 eraseDelayDSN dsn@(DSynchronous clsfDelay) = eraseDelayClSF (toDelayProxy dsn) clsfDelay
     
@@ -72,8 +85,13 @@ eraseDelayClSF :: (Monad m, Delay m delay) => DelayProxy delay -> ClSFDelay m cl
 eraseDelayClSF _ clsfDelay = proc (delayInfo, a) -> do
   case delayInfo of
     (False, _) -> returnA -< a
-    (True, tag) -> (runReaderS clsfDelay) -< (a, delayInfo)
+    (True, _) -> (runReaderS clsfDelay) -< (a, delayInfo)
 
+delayInfoOf :: Monad m => (DelayInfo delay -> b) -> ClSF (ReaderT (DelayInfo delay) m) cl a b
+delayInfoOf f = constM $ asks f
+
+dTagS :: ClSF (ReaderT (DelayInfo delay) m) cl a (DTag delay)
+dTagS = delayInfoOf snd
 
 -- PROXY
 
