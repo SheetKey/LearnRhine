@@ -53,6 +53,10 @@ library
                     , FRP.Rhine.SDL.Components.Velocity
                     , FRP.Rhine.SDL.Components.Collision
                     , FRP.Rhine.SDL.Components.Rotation
+
+                    -- Rhine addons
+                    , FRP.Rhine.Extra
+                    , FRP.Rhine.Extra.Schedule
     
     build-depends:    base ^>=4.15.1.0
                     , rhine
